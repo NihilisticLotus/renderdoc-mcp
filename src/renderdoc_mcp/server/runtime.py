@@ -711,6 +711,10 @@ def maybe_create_fastmcp() -> Any | None:
     offline = OfflineToolRegistry()
     live = LiveToolRegistry()
     app = FastMCP(name="RenderDoc MCP")
+    from .asset_workflows import register_asset_tools
+    register_asset_tools(app, live)
+    from .shader_conversion import register_shader_tools
+    register_shader_tools(app, live)
     descriptions = _tool_descriptions(OFFLINE_BOOTSTRAP_TOOLS, LIVE_BRIDGE_TOOLS)
 
     # Keep tool wrappers explicit so FastMCP can preserve per-tool signatures and schemas.

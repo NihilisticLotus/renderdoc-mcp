@@ -47,6 +47,25 @@ class Service(module.ShaderDebugServiceMixin):
 
 
 class ShaderDebugExportTests(unittest.TestCase):
+    def test_vertex_and_compute_use_distinct_debugger_entrypoints(self):
+        module.rd.ShaderStage.Vertex = 0
+        module.rd.ShaderStage.Compute = 5
+        for stage, invocation in [('vs', {'vertex': 7, 'index': 2, 'instance': 3}), ('cs', {'group': [1,2,3], 'thread': [4,5,6]})]:
+            controller = Controller()
+            calls = []
+            controller.GetComputePipelineObject = lambda: None
+            controller.DebugVertex = lambda *args: (calls.append(('vs', args)), controller.DebugPixel())[1]
+            controller.DebugThread = lambda *args: (calls.append(('cs', args)), controller.DebugPixel())[1]
+            with tempfile.TemporaryDirectory() as directory:
+                result = Service(controller).debug_shader_invocation(dict(invocation, stage=stage, eid=1, dest=str(Path(directory)/'trace.json')))
+                self.assertTrue(result['ok'])
+                self.assertTrue(controller.freed)
+                self.assertEqual(calls[0][0], stage)
+                if stage == 'vs':
+                    self.assertEqual(calls[0][1], (7,3,2,0))
+                else:
+                    self.assertEqual(calls[0][1], ([1,2,3],[4,5,6]))
+
     def test_complete_trace_preserves_nonfinite_bits_and_frees_debugger(self):
         controller=Controller()
         with tempfile.TemporaryDirectory() as directory:

@@ -32,7 +32,7 @@ class LiveBridgeInstance:
 
 
 class LiveBridgeClient:
-    def __init__(self, timeout: float = 20.0, bridge_id: str | None = None) -> None:
+    def __init__(self, timeout: float = 120.0, bridge_id: str | None = None) -> None:
         self.timeout = timeout
         self.bridge_id = (
             bridge_id

@@ -57,7 +57,8 @@ class BufferExportTests(unittest.TestCase):
             path = Path(directory) / "Buffer 1.bin"
             result = service.export_buffer({"rid": "ResourceId::1", "dest": str(path), "eid": 67, "offset": 3})
             self.assertTrue(result["ok"])
-            self.assertEqual(result["data"]["path"], str(path.resolve()))
+            # Windows temp paths may use an 8.3 alias for the same destination.
+            self.assertTrue(Path(result["data"]["path"]).samefile(path))
             self.assertEqual(path.read_bytes(), data[3:])
             self.assertEqual(result["data"]["sha256"], hashlib.sha256(data[3:]).hexdigest())
             self.assertEqual(result["data"]["bytes"], len(data)-3)

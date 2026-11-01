@@ -54,6 +54,7 @@ class RequestHandler:
             "export_capture_inventory": observe_service.export_capture_inventory,
             "export_pixel_history": observe_service.export_pixel_history,
             "export_shader_debug_trace": observe_service.export_shader_debug_trace,
+            "debug_shader_invocation": observe_service.debug_shader_invocation,
         }
         self._capture_service = capture_service
 
