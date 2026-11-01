@@ -2,6 +2,22 @@
 
 RenderDoc MCP workspace for a TA-focused, token-efficient analysis server.
 
+This fork is maintained at [NihilisticLotus/renderdoc-mcp](https://github.com/NihilisticLotus/renderdoc-mcp)
+and builds on [JinxiangW/renderdoc-mcp](https://github.com/JinxiangW/renderdoc-mcp).
+It keeps the existing replay bridge and adds scene/DCC handoff, batch texture export,
+shader evidence bundles, invocation debugging and shader language conversion.
+
+## 本分支增强
+
+- **模型、场景与相机**：导出几何和有证据的实例变换，生成 `DCC_HANDOFF.json`，供其他 DCC MCP 直接创建场景；支持 OBJ 和有明确坐标变换的 glTF。FBX 由下游 DCC 重建后导出。
+- **Shader 分析与调试**：汇总反射、常量、源码/反汇编、字节码、反编译和像素证据；新增 PS/VS/CS invocation trace 与按步读取。
+- **Shader 转换**：通过可选 FXC、DXC、glslang、SPIRV-Cross 和 Ruri 后端编译、反编译或跨语言转换，保留诊断与哈希。
+- **贴图**：按资源与事件批量导出 DDS/PNG/EXR 等格式，记录类型解释、逐项错误与文件校验值。
+
+这些能力新增 **10 个 MCP 工具**。场景恢复依赖已验证的矩阵/材质语义；反编译不能恢复原始源码，转换成功也不等于视觉等价。新增 VS/CS 调试已通过模拟后端测试，真实桥接验收仍待完成。
+
+先看 [Windows 安装与升级](./docs/setup.md)、[完整工作流与参数示例](./docs/asset-shader-workflows.md) 和 [变更记录](./CHANGELOG.md)。
+
 ## Goals
 
 - Prioritize material debugging, draw call location, reverse analysis, and model/texture export.
@@ -20,6 +36,9 @@ RenderDoc MCP workspace for a TA-focused, token-efficient analysis server.
 
 ## Key Docs
 
+- [Scene/DCC exports, textures, shader debugging and language conversion](./docs/asset-shader-workflows.md)
+- [Installation and optional shader backends](./docs/setup.md)
+- [Changelog](./CHANGELOG.md)
 - [Feature Tree](./docs/feat-tree.md)
 - [Schema Policy](./docs/schema.md)
 - [Checklist](./docs/checklist.md)

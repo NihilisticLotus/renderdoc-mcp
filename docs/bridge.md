@@ -42,6 +42,12 @@ so an already-running qrenderdoc does not break until it is restarted.
 - `load_latest_capture`
 - `wait_for_new_capture`
 - `find_events`
+- `debug_shader_invocation` (PS/VS/CS; uses the shared shader trace exporter)
+
+The MCP gateway also exposes file-backed asset/shader workflows that compose existing
+bridge methods; see [the workflow guide](asset-shader-workflows.md). The client defaults
+to a 120-second response timeout, including capture loading. Long-running operations
+can still time out; a client timeout does not cancel work inside RenderDoc.
 
 ## Live Window Selection
 

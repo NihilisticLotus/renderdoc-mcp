@@ -1,6 +1,14 @@
 # V1 Tool Specs
 
-All tools below default to `mode=summary`.
+The legacy inspection tools below default to `mode=summary` where supported.
+
+## Asset and shader workflow extensions
+
+The 10 new export, camera, debugging and conversion tools use explicit parameters and
+file-backed results rather than the legacy `mode` convention. Their signatures,
+examples and limitations are documented in [Asset and shader workflows](asset-shader-workflows.md).
+Live bundle/debug tools require both `window_id` and `expected_capture`.
+They are registered on the `run-mcp` FastMCP service, not the legacy local-JSON registry.
 
 ## RenderDuck replay camera
 
