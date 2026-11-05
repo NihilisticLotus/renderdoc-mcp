@@ -1,12 +1,23 @@
 """RenderDoc MCP bridge extension."""
 
-# RenderDuck uses renamed embedded Python modules but the same replay API.
+# RenderTest and RenderDuck expose renamed replay modules while retaining the
+# same API. Domain modules keep importing the legacy name, but it must refer to
+# the very same SWIG module instance and type registry.
+import importlib
 import sys
+
+from .runtime_identity import describe_runtime, install_legacy_replay_alias, runtime_display_name
+
 try:
-    import renderdoc
+    renderdoc = importlib.import_module("rendertest")
+    install_legacy_replay_alias(renderdoc)
 except ImportError:
-    import riderduck as renderdoc
-    sys.modules["renderdoc"] = renderdoc
+    try:
+        renderdoc = importlib.import_module("renderdoc")
+    except ImportError:
+        renderdoc = importlib.import_module("riderduck")
+        install_legacy_replay_alias(renderdoc)
+
 try:
     import qrenderdoc
 except ImportError:
@@ -31,7 +42,7 @@ _server = None
 
 
 def register(version, ctx):
-    """RenderDoc extension entrypoint."""
+    """Register the bridge with RenderDoc, RenderTest, or RenderDuck."""
     global _ctx, _server
     _ctx = ctx
     if install_ruri_shader_processors is not None:
@@ -41,10 +52,11 @@ def register(version, ctx):
             print("[renderdoc_mcp_bridge] failed to register Ruri shader processors: {}".format(exc))
     elif _ruri_import_error is not None:
         print("[renderdoc_mcp_bridge] failed to import Ruri shader processor installer: {}".format(_ruri_import_error))
-    handler = RequestHandler(ctx)
+    handler = RequestHandler(ctx, runtime_version=version)
     _server = BridgeServer(handler)
     _server.start()
-    print("[renderdoc_mcp_bridge] loaded for RenderDoc {}".format(version))
+    runtime_name = runtime_display_name(describe_runtime(version)["runtime_family"])
+    print("[renderdoc_mcp_bridge] loaded for {} {}".format(runtime_name, version))
 
 
 def unregister():

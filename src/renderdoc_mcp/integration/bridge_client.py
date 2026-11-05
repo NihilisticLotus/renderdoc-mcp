@@ -227,6 +227,9 @@ class LiveBridgeClient:
             "updated_at": info.get("updated_at"),
             "heartbeat_age_seconds": round(instance.heartbeat_age, 3),
         }
+        runtime = info.get("runtime")
+        if isinstance(runtime, dict):
+            summary["runtime"] = runtime
         if info.get("status_error"):
             summary["status_error"] = info.get("status_error")
         return summary

@@ -92,8 +92,12 @@ def configure_ui(ui_config: Path, decompiler_exe: Path | None) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--frontend", choices=("renderdoc", "renderduck"), default="renderdoc",
-                        help="Select qrenderdoc or qriderduck's separate user extension/config folder.")
+    parser.add_argument(
+        "--frontend",
+        choices=("renderdoc", "rendertest", "renderduck"),
+        default="renderdoc",
+        help="Select the frontend's separate user extension/config folder.",
+    )
     parser.add_argument("--incremental", action="store_true", help="Update/add source files without deleting the installed tree; restart qrenderdoc to load them. Obsolete files are retained.")
     parser.add_argument("--skip-decompiler", action="store_true", help="Leave the installed shader decompiler and its configuration unchanged (use with --incremental).")
     args = parser.parse_args()
@@ -101,7 +105,11 @@ def main() -> int:
         parser.error("--skip-decompiler requires --incremental so the existing tools remain present")
     repo_root = Path(__file__).resolve().parents[1]
     src = repo_root / "bridge_extension" / EXT_NAME
-    frontend_dir = "qriderduck" if args.frontend == "renderduck" else "qrenderdoc"
+    frontend_dir = {
+        "renderdoc": "qrenderdoc",
+        "rendertest": "qrendertest",
+        "renderduck": "qriderduck",
+    }[args.frontend]
     dst_root = Path(os.environ["APPDATA"]) / frontend_dir / "extensions"
     dst = dst_root / EXT_NAME
     dst_root.mkdir(parents=True, exist_ok=True)

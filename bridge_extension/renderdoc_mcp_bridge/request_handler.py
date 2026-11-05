@@ -2,12 +2,13 @@
 
 from .observe import CaptureStatusService, ObserveService
 from .domains.camera import ReplayCameraService
+from .runtime_identity import describe_runtime
 
 
 class RequestHandler:
     """Routes bridge requests to compact extension services."""
 
-    def __init__(self, ctx):
+    def __init__(self, ctx, runtime_version=None):
         capture_service = CaptureStatusService(ctx)
         observe_service = ObserveService(ctx)
         camera_service = ReplayCameraService(ctx)
@@ -57,6 +58,7 @@ class RequestHandler:
             "debug_shader_invocation": observe_service.debug_shader_invocation,
         }
         self._capture_service = capture_service
+        self._runtime_version = runtime_version
 
     def describe_instance(self):
         """Return lightweight metadata for bridge discovery."""
@@ -67,6 +69,7 @@ class RequestHandler:
                 "loaded": bool(data.get("loaded")),
                 "capture_path": data.get("path"),
                 "api": data.get("api"),
+                "runtime": describe_runtime(self._runtime_version),
             }
         except Exception as exc:
             return {

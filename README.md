@@ -38,6 +38,7 @@ shader evidence bundles, invocation debugging and shader language conversion.
 
 - [Scene/DCC exports, textures, shader debugging and language conversion](./docs/asset-shader-workflows.md)
 - [Installation and optional shader backends](./docs/setup.md)
+- [RenderDoc/RenderTest runtime compatibility](./docs/renderdoc-compatibility.md)
 - [Changelog](./CHANGELOG.md)
 - [Feature Tree](./docs/feat-tree.md)
 - [Schema Policy](./docs/schema.md)

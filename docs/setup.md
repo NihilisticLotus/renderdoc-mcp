@@ -14,7 +14,7 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe scripts\install_ext.py --incremental
 ```
 
-`install_ext.py` 安装到当前用户的 `%APPDATA%/qrenderdoc/extensions/renderdoc_mcp_bridge`，并更新 qrenderdoc 的自动加载与 Ruri 菜单配置。`--incremental` 保留已安装目录中的其他文件；旧的废弃文件不会被清除。脚本不会安装 RenderDoc、.NET 或额外编译器。
+默认 `renderdoc` 前端将扩展安装到当前用户的 `%APPDATA%/qrenderdoc/extensions/renderdoc_mcp_bridge`，并更新该前端的自动加载与 Ruri 菜单配置。`--frontend rendertest` 使用 `%APPDATA%/qrendertest/...`，`--frontend renderduck` 使用 `%APPDATA%/qriderduck/...`。`--incremental` 保留已安装目录中的其他文件；旧的废弃文件不会被清除。脚本不会安装 RenderDoc、.NET 或额外编译器。
 
 在 MCP 客户端新增 stdio 服务：
 
@@ -22,7 +22,7 @@ py -3.12 -m venv .venv
 - **args**：`["run-mcp"]`。
 - **env**：按需填写下面的编译器/.NET 环境变量；从客户端配置中设置，或确保客户端启动时继承了它们。
 
-该客户端配置放在用户级或项目级由使用者选择；桥接安装位置是当前 Windows 用户级。离线 Python replay 的 `RENDERDOC_PATH` 配置与本页的实时 qrenderdoc 桥接是不同路径，单纯使用实时导出不需要在外部 Python 中导入 RenderDoc。
+该客户端配置放在用户级或项目级由使用者选择；桥接安装位置是当前 Windows 用户级。离线 Python replay 的安装发现与实时 qrenderdoc 桥接是不同路径，单纯使用实时导出不需要在外部 Python 中导入 RenderDoc。旧安装继续使用 `RENDERDOC_PATH`；改名为 RenderTest 的并行构建使用 `RENDERTEST_PATH`，该路径优先且必须含 `rendertestcmd.exe`，避免旧安装掩盖新运行时缺件。详见[兼容性矩阵](./renderdoc-compatibility.md)。
 
 重启 RenderDoc 或重新加载扩展，打开一个可回放的 RDC；重连 MCP 后调用 `list_live_windows` 和 `get_capture_status` 确认连接。这里安装的是完整源码 checkout：桥接脚本与捆绑 Ruri 在 Python 包目录外，单独复制 wheel 或 `site-packages` 不能替代完整安装。
 
