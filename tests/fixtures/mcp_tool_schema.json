@@ -3,6 +3,184 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "data_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "edit_offset": {
+          "default": 0,
+          "type": "integer"
+        },
+        "eid": {
+          "type": "integer"
+        },
+        "expected_buffer": {
+          "type": "string"
+        },
+        "expected_offset": {
+          "type": "integer"
+        },
+        "expected_shader": {
+          "type": "string"
+        },
+        "expected_size": {
+          "type": "integer"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "slot": {
+          "type": "integer"
+        },
+        "space": {
+          "default": 0,
+          "type": "integer"
+        },
+        "stage": {
+          "default": "ps",
+          "type": "string"
+        },
+        "values": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision",
+        "eid",
+        "expected_shader",
+        "expected_buffer",
+        "expected_offset",
+        "expected_size",
+        "slot"
+      ],
+      "type": "object"
+    },
+    "name": "apply_event_cbuffer_edit"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "captured_shader": {
+          "default": false,
+          "type": "boolean"
+        },
+        "eid": {
+          "type": "integer"
+        },
+        "entry_point": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "expected_shader": {
+          "type": "string"
+        },
+        "independent_float": {
+          "default": true,
+          "type": "boolean"
+        },
+        "output_target": {
+          "default": 0,
+          "type": "integer"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "source_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stage": {
+          "default": "ps",
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision",
+        "eid",
+        "expected_shader"
+      ],
+      "type": "object"
+    },
+    "name": "apply_event_shader_edit"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "expected_capture": {
           "anyOf": [
             {
@@ -157,6 +335,56 @@
       "type": "object"
     },
     "name": "attach_qrenderdoc"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "eid": {
+          "type": "integer"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "slot": {
+          "default": 0,
+          "type": "integer"
+        },
+        "space": {
+          "default": 0,
+          "type": "integer"
+        },
+        "stage": {
+          "default": "ps",
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision",
+        "eid",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "name": "clear_event_edit"
   },
   {
     "inputSchema": {
@@ -1458,6 +1686,53 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "eid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "show": {
+          "default": false,
+          "type": "boolean"
+        },
+        "stage": {
+          "default": "ps",
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "x": {
+          "default": 0,
+          "type": "integer"
+        },
+        "y": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "name": "get_event_edit_state"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "draw_contains": {
           "anyOf": [
             {
@@ -2472,6 +2747,66 @@
       "type": "object"
     },
     "name": "search_draw_events_by_ue_hint"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "enabled"
+      ],
+      "type": "object"
+    },
+    "name": "set_event_editing_enabled"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision"
+      ],
+      "type": "object"
+    },
+    "name": "undo_event_edit"
   },
   {
     "inputSchema": {

@@ -63,6 +63,13 @@ OFFLINE_BOOTSTRAP_TOOLS: tuple[ToolSpec, ...] = (
 
 
 LIVE_BRIDGE_TOOLS: tuple[ToolSpec, ...] = (
+    ToolSpec("get_event_edit_state", True, "Read capture session, revision, bindings, shared undo state and unscaled RGBA32_FLOAT pixel at x/y (default 0/0); optionally select an event and show the editor."),
+    ToolSpec("set_event_editing_enabled", True, "Explicitly enable or disable event registration for the active native frontend process. Does not persist configuration."),
+    ToolSpec("apply_event_shader_edit", True, "Compile and apply an event-scoped Shader with independent RGBA32_FLOAT preview. Uses shared GUI undo, never global replacement."),
+    ToolSpec("apply_event_cbuffer_edit", True, "Edit a validated event CBuffer window using float32 components or a complete binary file. Untouched bytes are preserved."),
+    ToolSpec("clear_event_edit", True, "Clear one event Shader or CBuffer layer through the shared GUI undo history."),
+    ToolSpec("undo_event_edit", True, "Undo the last GUI or MCP event edit using the native shared history. Requires the current capture session and revision."),
+
     ToolSpec("get_replay_camera_state", True, "Read RenderDuck free-camera capability, pose, completion/error status and optionally the visible field configuration."),
     ToolSpec("configure_replay_camera", True, "Configure RenderDuck free camera through its public API and populate its visible panel. Matrices are 16 mathematical row-ordered values (column vectors). Fields specify semantic, shader ResourceId, stage VS/HS/DS/GS/PS/CS, slot, offset, first_event, last_event, row_major and row_vector. Poll get_replay_camera_state until busy/pending_update are false; last_error reports replay failures. Requires an updated local D3D11 RenderDuck frontend."),
     ToolSpec("reset_replay_camera", True, "Disable the free camera and restore original replay while retaining visible field configuration. Poll state for completion."),
@@ -116,7 +123,7 @@ LIVE_BRIDGE_TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(
         "apply_shader_edit",
         True,
-        "Compile source and replace the live shader bound at one event/stage for replay validation.",
+        "Compile source and apply a global Shader replacement located through one event/stage. Event overrides use apply_event_shader_edit.",
     ),
     ToolSpec(
         "revert_shader_edit",

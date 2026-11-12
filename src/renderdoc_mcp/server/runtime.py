@@ -143,6 +143,13 @@ class LiveToolRegistry:
     def __init__(self, client: LiveBridgeClient | None = None) -> None:
         self.client = client or LiveBridgeClient()
         self.handlers: dict[str, ToolHandler] = {
+            "get_event_edit_state": self._get_event_edit_state,
+            "set_event_editing_enabled": self._set_event_editing_enabled,
+            "apply_event_shader_edit": self._apply_event_shader_edit,
+            "apply_event_cbuffer_edit": self._apply_event_cbuffer_edit,
+            "clear_event_edit": self._clear_event_edit,
+            "undo_event_edit": self._undo_event_edit,
+
             "list_live_windows": self._list_live_windows,
             "get_replay_camera_state": self._get_replay_camera_state,
             "configure_replay_camera": self._configure_replay_camera,
@@ -455,6 +462,30 @@ class LiveToolRegistry:
     def _get_target_shader_encodings(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
         return self.client.call("get_target_shader_encodings", clean_params, window_id=window_id)
+
+    def _get_event_edit_state(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("get_event_edit_state", clean_params, window_id=window_id)
+
+    def _set_event_editing_enabled(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("set_event_editing_enabled", clean_params, window_id=window_id)
+
+    def _apply_event_shader_edit(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("apply_event_shader_edit", clean_params, window_id=window_id)
+
+    def _apply_event_cbuffer_edit(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("apply_event_cbuffer_edit", clean_params, window_id=window_id)
+
+    def _clear_event_edit(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("clear_event_edit", clean_params, window_id=window_id)
+
+    def _undo_event_edit(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("undo_event_edit", clean_params, window_id=window_id)
 
     def _apply_shader_edit(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
@@ -1143,6 +1174,30 @@ def maybe_create_fastmcp() -> Any | None:
                 "window_id": window_id,
             },
         )
+
+    @app.tool(description=descriptions["get_event_edit_state"])
+    def get_event_edit_state(eid: int | None = None, stage: str = "ps", show: bool = False, x: int = 0, y: int = 0, window_id: str | None = None) -> Any:
+        return live.require("get_event_edit_state", {"eid": eid, "stage": stage, "show": show, "x": x, "y": y, "window_id": window_id})
+
+    @app.tool(description=descriptions["set_event_editing_enabled"])
+    def set_event_editing_enabled(session_id: str, enabled: bool, window_id: str | None = None) -> Any:
+        return live.require("set_event_editing_enabled", {"session_id": session_id, "enabled": enabled, "window_id": window_id})
+
+    @app.tool(description=descriptions["apply_event_shader_edit"])
+    def apply_event_shader_edit(session_id: str, revision: int, eid: int, expected_shader: str, stage: str = "ps", source: str | None = None, source_path: str | None = None, entry_point: str | None = None, captured_shader: bool = False, independent_float: bool = True, output_target: int = 0, window_id: str | None = None) -> Any:
+        return live.require("apply_event_shader_edit", {"session_id": session_id, "revision": revision, "eid": eid, "expected_shader": expected_shader, "stage": stage, "source": source, "source_path": source_path, "entry_point": entry_point, "captured_shader": captured_shader, "independent_float": independent_float, "output_target": output_target, "window_id": window_id})
+
+    @app.tool(description=descriptions["apply_event_cbuffer_edit"])
+    def apply_event_cbuffer_edit(session_id: str, revision: int, eid: int, expected_shader: str, expected_buffer: str, expected_offset: int, expected_size: int, slot: int, stage: str = "ps", space: int = 0, values: list[float] | None = None, edit_offset: int = 0, data_path: str | None = None, window_id: str | None = None) -> Any:
+        return live.require("apply_event_cbuffer_edit", {"session_id": session_id, "revision": revision, "eid": eid, "expected_shader": expected_shader, "expected_buffer": expected_buffer, "expected_offset": expected_offset, "expected_size": expected_size, "slot": slot, "stage": stage, "space": space, "values": values, "edit_offset": edit_offset, "data_path": data_path, "window_id": window_id})
+
+    @app.tool(description=descriptions["clear_event_edit"])
+    def clear_event_edit(session_id: str, revision: int, eid: int, kind: str, stage: str = "ps", slot: int = 0, space: int = 0, window_id: str | None = None) -> Any:
+        return live.require("clear_event_edit", {"session_id": session_id, "revision": revision, "eid": eid, "kind": kind, "stage": stage, "slot": slot, "space": space, "window_id": window_id})
+
+    @app.tool(description=descriptions["undo_event_edit"])
+    def undo_event_edit(session_id: str, revision: int, window_id: str | None = None) -> Any:
+        return live.require("undo_event_edit", {"session_id": session_id, "revision": revision, "window_id": window_id})
 
     @app.tool(description=descriptions["apply_shader_edit"])
     def apply_shader_edit(

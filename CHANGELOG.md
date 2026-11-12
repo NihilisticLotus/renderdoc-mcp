@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-13：B1 事件编辑
+
+- 新增 6 个事件 Shader/CBuffer 工具，复用 CaptureContext 会话、回放队列与 GUI 撤销历史。
+- 全局 Shader 工具保持原 schema，补充新前端的互斥与会话清理。
+- 见 [使用说明](docs/event-editing.md)；旧前端显式不支持，暂未部署。
+
 ## 2026-11-02 — Scene/DCC and shader workflow extensions
 
 Based on upstream `JinxiangW/renderdoc-mcp` commit `bb7d577421f740c5ae8f54bec0edb33e18a16742`.

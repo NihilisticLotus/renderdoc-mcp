@@ -2,6 +2,7 @@
 
 from .observe import CaptureStatusService, ObserveService
 from .domains.camera import ReplayCameraService
+from .domains.event_edit import EventEditService
 from .runtime_identity import describe_runtime
 
 
@@ -12,7 +13,15 @@ class RequestHandler:
         capture_service = CaptureStatusService(ctx)
         observe_service = ObserveService(ctx)
         camera_service = ReplayCameraService(ctx)
+        event_edit_service = EventEditService(ctx)
         self._handlers = {
+            "get_event_edit_state": event_edit_service.get_event_edit_state,
+            "set_event_editing_enabled": event_edit_service.set_event_editing_enabled,
+            "apply_event_shader_edit": event_edit_service.apply_event_shader_edit,
+            "apply_event_cbuffer_edit": event_edit_service.apply_event_cbuffer_edit,
+            "clear_event_edit": event_edit_service.clear_event_edit,
+            "undo_event_edit": event_edit_service.undo_event_edit,
+
             "ping": lambda _params: {"status": "ok", "message": "pong"},
             "get_capture_status": capture_service.run,
             "get_replay_camera_state": camera_service.get_replay_camera_state,

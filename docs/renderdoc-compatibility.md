@@ -141,3 +141,21 @@ RENDERTEST_PATH = "C:/RenderDocCustom"
 - 当前 MCP host 会在下次连接时读取更新后的环境；现有服务没有重启。最新部署根目录的 GUI
   bridge 尚未在本轮 MCP 会话中实时连接，因此 pipeline/shader/texture live 导出和 pixel-debug
   仍需 GUI 后续可用时补验。用户主线程已有同一正式部署的 frame4834 直接加载、回放与画面导出证据。
+
+
+## 2026-11-13 B1 GUI/MCP 统一事件编辑（未部署）
+
+| 生产者/消费者 | 契约与本地检查 |
+| --- | --- |
+| GUI/DLL/helper | 主仓库Development x64/x86保持rendertest身份；测试进程逐一核对实际加载DLL路径与SHA256，未覆盖正式目录 |
+| Python | 新增9个CaptureContext UI-thread invoker，双架构GUI绑定一致性通过；桥接仍使用renderdoc别名，同一模块/type registry |
+| Capture identity/replay | GetCaptureSessionID + EventEditRevision；新6工具调用原CaptureContext与Replay队列，不另建事件撤销栈 |
+| Existing global Shader tools | 原输入schema不变；新前端登记原全局替换映射，与有效事件层互斥，捕获重开清理桥接映射 |
+| New preview result | get_event_edit_state的x/y查询实际RGBA32_FLOAT原始像素，越界明确报错；回放回调异常在BlockInvoke返回后显式传播 |
+| Extension/config/discovery | 包名、AppData namespace、bridge IPC与window_id发现不变；验收从source/bridge_extension加载，不替换安装桥接 |
+| Old frontend/remote | 缺少新CaptureContext API明确不支持；原生不支持的远程编辑/API由原接口拒绝。未新做Mac/Linux或远程GUI验收 |
+
+fresh tools/list：原60项schema逐项不变，新增6项，共66项；最终schema SHA256 `db65100de5a83462087b27a99f18ce3d9830d973e4a184aec5ffd800dafdff94`。
+102项本地MCP回归通过。实际live证据包括新的stdio session、目标窗口ID、构建GUI与loaded DLL路径、双API/双架构编辑、GUI/MCP交叉撤销、指定像素读取及越界错误；主仓库 `docs/diagnostics/event-override-gui-mcp-20261113.md/json`保存完整进程和文件哈希。不是旧GUI或上游测试结果。
+
+用户本轮要求暂不部署：未安装新bridge、未更新C:/RenderDocCustom、未重启既有host；新功能在源码及隔离构建验收中可用。用法见[event-editing.md](event-editing.md)。

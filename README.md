@@ -9,6 +9,8 @@ shader evidence bundles, invocation debugging and shader language conversion.
 
 ## 本分支增强
 
+- **B1 事件编辑**：新增 6 个 Shader/CBuffer 事件编辑工具，与 GUI 共享会话和撤销；默认关闭，支持独立 RGBA32_FLOAT 输出。[使用说明](docs/event-editing.md)。
+
 - **模型、场景与相机**：导出几何和有证据的实例变换，生成 `DCC_HANDOFF.json`，供其他 DCC MCP 直接创建场景；支持 OBJ 和有明确坐标变换的 glTF。FBX 由下游 DCC 重建后导出。
 - **Shader 分析与调试**：汇总反射、常量、源码/反汇编、字节码、反编译和像素证据；新增 PS/VS/CS invocation trace 与按步读取。
 - **Shader 转换**：通过可选 FXC、DXC、glslang、SPIRV-Cross 和 Ruri 后端编译、反编译或跨语言转换，保留诊断与哈希。

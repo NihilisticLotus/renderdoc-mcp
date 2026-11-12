@@ -5,6 +5,7 @@ import os
 
 import renderdoc as rd
 
+from .base import invoke_replay_checked
 from .pipeline import ShaderSupportMixin
 from .inventory import binding_location
 
@@ -855,7 +856,41 @@ class ShaderServiceMixin(ShaderSupportMixin):
         self.ctx.Replay().BlockInvoke(collect)
         return result
 
+    def _shared_global_edit(self, params, revert):
+        from .capture import CaptureStatusService
+        def run():
+            session = self.ctx.GetCaptureSessionID()
+            if session != getattr(self, "_global_edit_session", None):
+                self._shader_replacements = {}
+                self._replacement_to_original = {}
+                self._global_edit_session = session
+            if not revert and self.ctx.HasEventEdits():
+                return {"ok": False, "mode": "summary", "data": None,
+                        "err": {"code": "event_edits_active", "msg": "Undo or clear event edits before global replacement"},
+                        "meta": {"cap": "active", "truncated": False}}
+            self._pending_global_binding = None
+            try:
+                return self._revert_shader_edit_legacy(params) if revert else self._apply_shader_edit_legacy(params)
+            finally:
+                # Publish the actual native replacement even if later resource cleanup failed.
+                # Otherwise a cleanup exception could hide an active global replacement.
+                if self._pending_global_binding:
+                    original, replacement = self._pending_global_binding
+                    if revert:
+                        self.ctx.UnregisterReplacement(original)
+                    else:
+                        self.ctx.RegisterReplacement(original, replacement)
+                    eid = params.get("eid")
+                    if eid is not None:
+                        self.ctx.SetEventID([], int(eid), int(eid), True)
+        return CaptureStatusService(self.ctx)._invoke_on_ui_thread(run, 120.0)
+
     def apply_shader_edit(self, params):
+        if callable(getattr(self.ctx, "HasEventEdits", None)):
+            return self._shared_global_edit(params, False)
+        return self._apply_shader_edit_legacy(params)
+
+    def _apply_shader_edit_legacy(self, params):
         if not self.ctx.IsCaptureLoaded():
             return self._no_capture()
 
@@ -989,6 +1024,7 @@ class ShaderServiceMixin(ShaderSupportMixin):
             old_local_replacement = replacements.get(shader_str)
 
             controller.ReplaceResource(shader, new_shader)
+            self._pending_global_binding = (shader, new_shader)
             controller.SetFrameEvent(eid, True)
 
             replacements[shader_str] = new_shader
@@ -1012,7 +1048,7 @@ class ShaderServiceMixin(ShaderSupportMixin):
                 "meta": {"cap": "active", "truncated": False},
             }
 
-        self.ctx.Replay().BlockInvoke(collect)
+        invoke_replay_checked(self.ctx, collect)
 
         if result and result.get("ok"):
             if old_local_replacement is not None:
@@ -1020,13 +1056,20 @@ class ShaderServiceMixin(ShaderSupportMixin):
                     try:
                         controller.FreeTargetResource(old_local_replacement)
                     except Exception as exc:
+                        if callable(getattr(self.ctx, "HasEventEdits", None)):
+                            raise
                         self._warn_swallow("shader.apply_edit.free_old", exc)
 
-                self.ctx.Replay().BlockInvoke(free_old)
+                invoke_replay_checked(self.ctx, free_old)
 
         return result
 
     def revert_shader_edit(self, params):
+        if callable(getattr(self.ctx, "HasEventEdits", None)):
+            return self._shared_global_edit(params, True)
+        return self._revert_shader_edit_legacy(params)
+
+    def _revert_shader_edit_legacy(self, params):
         if not self.ctx.IsCaptureLoaded():
             return self._no_capture()
 
@@ -1093,6 +1136,7 @@ class ShaderServiceMixin(ShaderSupportMixin):
                 replacement_to_original.pop(str(replacement), None)
 
             controller.RemoveReplacement(original)
+            self._pending_global_binding = (original, None)
             if eid is not None:
                 controller.SetFrameEvent(int(eid), True)
 
@@ -1110,7 +1154,7 @@ class ShaderServiceMixin(ShaderSupportMixin):
                 "meta": {"cap": "active", "truncated": False},
             }
 
-        self.ctx.Replay().BlockInvoke(collect)
+        invoke_replay_checked(self.ctx, collect)
 
         if result and result.get("ok"):
             if freed_replacement is not None:
@@ -1118,9 +1162,11 @@ class ShaderServiceMixin(ShaderSupportMixin):
                     try:
                         controller.FreeTargetResource(freed_replacement)
                     except Exception as exc:
+                        if callable(getattr(self.ctx, "HasEventEdits", None)):
+                            raise
                         self._warn_swallow("shader.revert_edit.free_target", exc)
 
-                self.ctx.Replay().BlockInvoke(free_target)
+                invoke_replay_checked(self.ctx, free_target)
 
         return result
 
