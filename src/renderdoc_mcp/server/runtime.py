@@ -746,6 +746,8 @@ def maybe_create_fastmcp() -> Any | None:
     register_asset_tools(app, live)
     from .shader_conversion import register_shader_tools
     register_shader_tools(app, live)
+    from .workflow import register_workflow_tools
+    register_workflow_tools(app, live)
     descriptions = _tool_descriptions(OFFLINE_BOOTSTRAP_TOOLS, LIVE_BRIDGE_TOOLS)
 
     # Keep tool wrappers explicit so FastMCP can preserve per-tool signatures and schemas.

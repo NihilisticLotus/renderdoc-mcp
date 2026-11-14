@@ -67,6 +67,32 @@ class AssetTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 bundle.call('inspect_mesh', eid=1)
 
+    def test_same_path_reopen_and_edit_changes_abort_export(self):
+        for changed in ({'session_id': 'new', 'edit_revision': 4},
+                        {'session_id': 'original', 'edit_revision': 5},
+                        {'session_id': None, 'edit_revision': None}):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as root:
+                class SessionBridge(Bridge):
+                    identity = {'session_id': 'original', 'edit_revision': 4}
+                    def require(self, method, params):
+                        result = super().require(method, params)
+                        if method == 'get_capture_status':
+                            result['data'].update(self.identity)
+                        return result
+                live = SessionBridge()
+                bundle = Bundle(live, str(Path(root)/'bundle'), 'w', 'capture.rdc')
+                live.identity = changed
+                with self.assertRaisesRegex(RuntimeError, 'session or edit revision'):
+                    bundle.call('inspect_mesh', eid=1)
+                self.assertFalse(any(name == 'inspect_mesh' for name, _ in live.calls))
+
+    def test_legacy_bundle_labels_path_only_guard(self):
+        with tempfile.TemporaryDirectory() as root:
+            bundle = Bundle(Bridge(), str(Path(root)/'bundle'), 'w', 'capture.rdc')
+            result = bundle.finish({})
+            manifest = json.loads(Path(result['path']).read_text())
+            self.assertEqual(manifest['identity_guard'], 'legacy_path_only')
+
 
 if __name__ == '__main__':
     unittest.main()

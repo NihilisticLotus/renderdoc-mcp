@@ -17,7 +17,7 @@
 
 涉及实时捕获的新增工具要求显式 `window_id` 和 `expected_capture`。`dest` 为尚不存在的目录（语言转换工具为尚不存在的文件），以免覆盖先前结果。`manifest.json` 的 `complete` 表示导出操作完成情况；场景的 `reconstruction_complete` 与 `unresolved` 单独说明重建信息是否齐备，不证明与原画面一致。部分导出失败时保留已写出的证据与错误。
 
-每项桥接调用前及结束时检查捕获路径。这是路径级检查，不是 RDC 内容指纹或原子快照；批量导出期间请勿切换/覆盖捕获。导出包可能包含本机路径、捕获内 shader 和资源，分享前应检查内容。
+每项桥接调用前及结束时检查捕获路径；新版桥接还固定捕获 `session_id` 和 `edit_revision`，同路径重开或 GUI/MCP 事件编辑会使导出中止。manifest 写出保护方式 `identity_guard`：旧前端为 `legacy_path_only`，新前端为 `session_and_revision`。这不是 RDC 内容指纹或原子快照，也不能检测绕过 CaptureContext 的原生修改/旧全局替换；批量导出期间请勿切换捕获或修改回放状态。导出包可能包含本机路径、捕获内 shader 和资源，分享前应检查内容。
 
 ## 场景与 DCC 交接
 

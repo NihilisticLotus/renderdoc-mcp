@@ -3,6 +3,7 @@
 from .observe import CaptureStatusService, ObserveService
 from .domains.camera import ReplayCameraService
 from .domains.event_edit import EventEditService
+from .domains.workflow import WorkflowService
 from .runtime_identity import describe_runtime
 
 
@@ -15,6 +16,7 @@ class RequestHandler:
         camera_service = ReplayCameraService(ctx)
         event_edit_service = EventEditService(ctx)
         self._handlers = {
+            "get_workflow_capabilities": WorkflowService(ctx).capabilities,
             "get_event_edit_state": event_edit_service.get_event_edit_state,
             "set_event_editing_enabled": event_edit_service.set_event_editing_enabled,
             "apply_event_shader_edit": event_edit_service.apply_event_shader_edit,

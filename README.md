@@ -9,6 +9,8 @@ shader evidence bundles, invocation debugging and shader language conversion.
 
 ## 本分支增强
 
+当前共 **67 个 MCP 工具**。新增只读 `get_workflow_capabilities(window_id)`，用于确认实际窗口的事件编辑能力、捕获 session、编辑 revision 与后续工作流接入状态；详见 [Bread 工作流适配](docs/bread-workflow.md)。网关工具列表不代表旧 GUI 已部署这些能力。
+
 - **B1 事件编辑**：新增 6 个 Shader/CBuffer 事件编辑工具，与 GUI 共享会话和撤销；默认关闭，支持独立 RGBA32_FLOAT 输出。[使用说明](docs/event-editing.md)。
 
 - **模型、场景与相机**：导出几何和有证据的实例变换，生成 `DCC_HANDOFF.json`，供其他 DCC MCP 直接创建场景；支持 OBJ 和有明确坐标变换的 glTF。FBX 由下游 DCC 重建后导出。

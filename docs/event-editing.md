@@ -1,10 +1,11 @@
 # 事件 Shader/CBuffer 编辑与共享撤销
 
-本功能需要带 `ICaptureContext.EditEventShader/EditEventCBuffer/UndoEventEdit` 的 RenderTest B1 GUI，以及本版桥接。旧前端返回明确的不支持错误。现有 60 个工具的输入 schema 保持不变；新增 6 个工具，合计 66 个。
+本功能需要带 `ICaptureContext.EditEventShader/EditEventCBuffer/UndoEventEdit` 的 RenderTest B1 GUI，以及本版桥接。旧前端返回明确的不支持错误。B1 新增 6 个工具形成 66 项基线；2026-11-14 新增能力查询后共 67 项，前 66 项输入 schema 不变。
 
 ## 使用顺序
 
 1. `list_live_windows` 获取目标窗口，后续显式传 `window_id`。
+   先调用 `get_workflow_capabilities(window_id)` 核对实际前端、捕获身份和 `event_editing.capture_eligible`；`enabled=false` 是默认状态。查询不选择事件、不启用编辑。旧桥接返回方法不存在时，需更新目标前端桥接并重新加载，不能用网关工具数量推断前端支持。
 2. 打开 RDC 后，调用 `get_event_edit_state(eid=..., stage="ps", show=True)`，取得 `session_id`、`revision`、Shader 身份、各 CBuffer 的 slot/space/offset/size。`show=True` 打开同一个 GUI 编辑器。
 3. 默认关闭。调用 `set_event_editing_enabled(session_id=..., enabled=True)`，仅在当前进程启用，不写配置。
 4. 修改 Shader：调用 `apply_event_shader_edit`，传当前 session/revision/eid/expected_shader，选择源码 `source` 或 `source_path`，保留捕获的编译 flags，必要时显式 `entry_point`。`captured_shader=True` 使用原字节码建立独立浮点输出，可配合仅 CBuffer 编辑。

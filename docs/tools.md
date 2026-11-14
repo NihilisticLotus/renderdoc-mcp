@@ -4,6 +4,8 @@ The legacy inspection tools below default to `mode=summary` where supported.
 
 ## Asset and shader workflow extensions
 
+`get_workflow_capabilities(window_id)` reports the actual frontend/capture capability surface without enabling editing or selecting an event. See [Bread workflow integration](bread-workflow.md). The service now exposes 67 tools; the prior 66 input contracts are unchanged.
+
 The 10 new export, camera, debugging and conversion tools use explicit parameters and
 file-backed results rather than the legacy `mode` convention. Their signatures,
 examples and limitations are documented in [Asset and shader workflows](asset-shader-workflows.md).

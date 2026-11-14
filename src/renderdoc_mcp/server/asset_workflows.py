@@ -68,6 +68,7 @@ class Bundle:
         if not window_id or not expected_capture:
             raise ValueError("An explicit window_id and expected_capture path are required")
         self.live, self.window_id, self.expected = live, window_id, expected_capture
+        self.identity = None
         self.check_capture()
         self.path = new_directory(dest)
         self.errors = []
@@ -78,6 +79,11 @@ class Bundle:
         data = status.get("data") or {}
         if not status.get("ok") or not data.get("loaded") or Path(data.get("path", "")).resolve() != Path(self.expected).resolve():
             raise RuntimeError("Capture changed or not loaded in requested window")
+        current = (data.get('session_id'), data.get('edit_revision'))
+        if self.identity is None:
+            self.identity = current
+        elif current != self.identity:
+            raise RuntimeError("Capture session or edit revision changed during export")
         return status
 
     def call(self, name, **params):
@@ -101,6 +107,8 @@ class Bundle:
                     digest = hashlib.file_digest(stream, "sha256").hexdigest()
                 files.append({"path": path.relative_to(self.path).as_posix(), "bytes": path.stat().st_size, "sha256": digest})
         payload.update(schema_version=1, capture=self.expected, window_id=self.window_id,
+                       session_id=self.identity[0], edit_revision=self.identity[1],
+                       identity_guard='session_and_revision' if self.identity[0] else 'legacy_path_only',
                        errors=self.errors, complete=not self.errors, files=files)
         write_json(self.path / "evidence.json", self.records)
         write_json(self.path / "manifest.json", payload)

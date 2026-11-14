@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-14 — Bread workflow capability negotiation
+
+- Add read-only `get_workflow_capabilities(window_id)` for actual frontend/capture discovery; planned B2–B6 adapters are explicitly not integrated. There are now 67 tools; all previous 66 input schemas are unchanged.
+- Capture status exposes native session, edit revision and event-edit activity. Export bundles pin session/revision, reject same-path reopen/edit changes, and label legacy path-only guards.
+- Document the current B1 boundary, deployment gap and full subsequent workflow scope. No native B2–B6 implementation or deployment is implied.
+- Validation: 107 unit tests; unchanged previous 66 input contracts plus the new query; Windows x64 D3D11/D3D12 owned GUI fixtures each passed 205 checks using the latest Development runtime and source bridge. No x86/remote/Metal or fresh C++ build claim.
+
 ## 2026-11-13：B1 事件编辑
 
 - 新增 6 个事件 Shader/CBuffer 工具，复用 CaptureContext 会话、回放队列与 GUI 撤销历史。

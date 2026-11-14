@@ -2088,6 +2088,21 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "window_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "window_id"
+      ],
+      "type": "object"
+    },
+    "name": "get_workflow_capabilities"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "eid": {
           "type": "integer"
         },
