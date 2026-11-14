@@ -159,3 +159,19 @@ fresh tools/list：原60项schema逐项不变，新增6项，共66项；最终sc
 102项本地MCP回归通过。实际live证据包括新的stdio session、目标窗口ID、构建GUI与loaded DLL路径、双API/双架构编辑、GUI/MCP交叉撤销、指定像素读取及越界错误；主仓库 `docs/diagnostics/event-override-gui-mcp-20261113.md/json`保存完整进程和文件哈希。不是旧GUI或上游测试结果。
 
 用户本轮要求暂不部署：未安装新bridge、未更新C:/RenderDocCustom、未重启既有host；新功能在源码及隔离构建验收中可用。用法见[event-editing.md](event-editing.md)。
+
+
+## 2026-11-14 B2 历史与共享 Buffer（未部署）
+
+| 生产者/消费者 | 兼容结论 |
+| --- | --- |
+| GUI/DLL/CLI/helper | Development x64/x86原身份与双架构配对不变，隔离宿主逐一核对实际加载DLL路径/SHA256；不改正式目录 |
+| Python/SWIG | 3个controller方法、2个CaptureContext方法与结构反射/数组同步；两架构GUI绑定一致性通过，renderdoc/rendertest同一type registry；长事务释放GIL |
+| MCP输入与结果 | 原67工具schema逐项不变，新增5个B2工具共72；snapshot原始字节/hash与RGB8显示分开；新heartbeat_status为可选实例元数据 |
+| 会话/队列/撤销 | 复用B1 window_id、capture UUID、revision和CaptureContext单一undo；原生回放串行，跨入口撤销/捕获重开/全局替换互斥均实测 |
+| IPC/扩展/配置/launcher | 原文件命名、temp/AppData namespace和launcher保持不变；独立纯文件心跳线程与GIL释放防止长回放假离线，不放宽客户端存活阈值或重试写请求 |
+| 旧前端/远程/API | 缺能力明确错误，本地仅D3D11/12；远程proxy及未支持资源依赖拒绝，没有旧安装fallback |
+
+113项本地回归通过，fresh tools/list及真实GUI/MCP证据见[B2用法与边界](b2-history-shared-buffer.md)。
+主仓库13个独立回放进程验证双架构/双API/双语浅深、历史/共享/统一撤销和真实RDC；
+原生接口未在Mac/Linux、新远程会话或设备故障注入条件下验收。本轮不部署、不安装bridge、不重启已有host。

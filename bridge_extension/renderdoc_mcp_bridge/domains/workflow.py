@@ -43,8 +43,8 @@ class WorkflowService(BridgeService):
                                       'operation_validation_required': True},
                     'workflow_adapters': {
                         'B1_event_editing': 'available' if not missing else 'unsupported_frontend',
-                        'B2_shared_buffer_persistent_edit': 'not_integrated',
-                        'B2_analysis_state_restore': 'not_integrated',
+                        'B2_shared_buffer_persistent_edit': 'available' if callable(getattr(self.ctx, 'EditSharedBufferRange', None)) else 'unsupported_frontend',
+                        'B2_analysis_state_restore': 'available' if callable(getattr(self.ctx, 'EditSharedBufferRange', None)) else 'unsupported_frontend',
                         'B3_project_workspace': 'not_integrated',
                         'B4_embedded_ai_mcp_host': 'not_integrated',
                         'B5_engine_effect_reconstruction': 'not_integrated',

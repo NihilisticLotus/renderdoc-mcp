@@ -18,6 +18,11 @@ class RequestHandler:
         self._handlers = {
             "get_workflow_capabilities": WorkflowService(ctx).capabilities,
             "get_event_edit_state": event_edit_service.get_event_edit_state,
+            "get_shared_buffer_state": event_edit_service.get_shared_buffer_state,
+            "set_shared_buffer_editing_enabled": event_edit_service.set_shared_buffer_editing_enabled,
+            "apply_shared_buffer_edit": event_edit_service.apply_shared_buffer_edit,
+            "get_rt_history": event_edit_service.get_rt_history,
+            "get_rt_snapshot": event_edit_service.get_rt_snapshot,
             "set_event_editing_enabled": event_edit_service.set_event_editing_enabled,
             "apply_event_shader_edit": event_edit_service.apply_event_shader_edit,
             "apply_event_cbuffer_edit": event_edit_service.apply_event_cbuffer_edit,

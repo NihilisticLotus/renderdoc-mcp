@@ -28,3 +28,7 @@
 
 `python -m unittest discover -s tests -t . -v`；`python scripts/verify_mcp_tool_schema.py`。
 GUI/桥接实际联测位于 Dev-RenderDoc 的 `util/diagnostics/event_overrides/gui_mcp.py`，使用新的 stdio 会话和隔离的 `--ui-event-edit-test` GUI，检查实际加载 DLL 路径、完整浮点纹理字节、共享撤销和错误清理。结果及哈希见主仓库 `docs/diagnostics/event-override-gui-mcp-20261113.md/json`，不把此处模拟后端单测当成实际 GPU 验收。
+
+
+B2扩展：RT历史、临时分析恢复和共享Buffer持续范围编辑见[b2-history-shared-buffer.md](b2-history-shared-buffer.md)。
+B1的事件影子、B2共享Buffer和全局Shader替换仍保持不同语义，撤销使用同一原生会话。

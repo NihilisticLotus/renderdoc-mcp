@@ -305,6 +305,74 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "buffer": {
+          "type": "string"
+        },
+        "data_hex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "length": {
+          "type": "integer"
+        },
+        "offset": {
+          "type": "integer"
+        },
+        "reset": {
+          "default": false,
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision",
+        "buffer",
+        "offset",
+        "length"
+      ],
+      "type": "object"
+    },
+    "name": "apply_shared_buffer_edit"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "path": {
           "anyOf": [
             {
@@ -1916,6 +1984,105 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "texture": {
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision",
+        "texture"
+      ],
+      "type": "object"
+    },
+    "name": "get_rt_history"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "eid": {
+          "type": "integer"
+        },
+        "mip": {
+          "default": 0,
+          "type": "integer"
+        },
+        "range_max": {
+          "default": 1.0,
+          "type": "number"
+        },
+        "range_min": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "raw_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "slice": {
+          "default": 0,
+          "type": "integer"
+        },
+        "texture": {
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision",
+        "eid",
+        "texture"
+      ],
+      "type": "object"
+    },
+    "name": "get_rt_snapshot"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "eid": {
           "type": "integer"
         },
@@ -2063,6 +2230,36 @@
       "type": "object"
     },
     "name": "get_shader_source"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision"
+      ],
+      "type": "object"
+    },
+    "name": "get_shared_buffer_state"
   },
   {
     "inputSchema": {
@@ -2792,6 +2989,40 @@
       "type": "object"
     },
     "name": "set_event_editing_enabled"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "revision",
+        "enabled"
+      ],
+      "type": "object"
+    },
+    "name": "set_shared_buffer_editing_enabled"
   },
   {
     "inputSchema": {

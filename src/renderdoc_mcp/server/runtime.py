@@ -144,6 +144,11 @@ class LiveToolRegistry:
         self.client = client or LiveBridgeClient()
         self.handlers: dict[str, ToolHandler] = {
             "get_event_edit_state": self._get_event_edit_state,
+            "get_shared_buffer_state": self._get_shared_buffer_state,
+            "set_shared_buffer_editing_enabled": self._set_shared_buffer_editing_enabled,
+            "apply_shared_buffer_edit": self._apply_shared_buffer_edit,
+            "get_rt_history": self._get_rt_history,
+            "get_rt_snapshot": self._get_rt_snapshot,
             "set_event_editing_enabled": self._set_event_editing_enabled,
             "apply_event_shader_edit": self._apply_event_shader_edit,
             "apply_event_cbuffer_edit": self._apply_event_cbuffer_edit,
@@ -462,6 +467,26 @@ class LiveToolRegistry:
     def _get_target_shader_encodings(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
         return self.client.call("get_target_shader_encodings", clean_params, window_id=window_id)
+
+    def _get_shared_buffer_state(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("get_shared_buffer_state", clean_params, window_id=window_id)
+
+    def _set_shared_buffer_editing_enabled(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("set_shared_buffer_editing_enabled", clean_params, window_id=window_id)
+
+    def _apply_shared_buffer_edit(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("apply_shared_buffer_edit", clean_params, window_id=window_id)
+
+    def _get_rt_history(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("get_rt_history", clean_params, window_id=window_id)
+
+    def _get_rt_snapshot(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("get_rt_snapshot", clean_params, window_id=window_id)
 
     def _get_event_edit_state(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
@@ -1176,6 +1201,26 @@ def maybe_create_fastmcp() -> Any | None:
                 "window_id": window_id,
             },
         )
+
+    @app.tool(description=descriptions["get_shared_buffer_state"])
+    def get_shared_buffer_state(session_id: str, revision: int, window_id: str | None = None) -> Any:
+        return live.require("get_shared_buffer_state", {"session_id": session_id, "revision": revision, "window_id": window_id})
+
+    @app.tool(description=descriptions["set_shared_buffer_editing_enabled"])
+    def set_shared_buffer_editing_enabled(session_id: str, revision: int, enabled: bool, window_id: str | None = None) -> Any:
+        return live.require("set_shared_buffer_editing_enabled", {"session_id": session_id, "revision": revision, "enabled": enabled, "window_id": window_id})
+
+    @app.tool(description=descriptions["apply_shared_buffer_edit"])
+    def apply_shared_buffer_edit(session_id: str, revision: int, buffer: str, offset: int, length: int, data_hex: str | None = None, data_path: str | None = None, reset: bool = False, window_id: str | None = None) -> Any:
+        return live.require("apply_shared_buffer_edit", {"session_id": session_id, "revision": revision, "buffer": buffer, "offset": offset, "length": length, "data_hex": data_hex, "data_path": data_path, "reset": reset, "window_id": window_id})
+
+    @app.tool(description=descriptions["get_rt_history"])
+    def get_rt_history(session_id: str, revision: int, texture: str, window_id: str | None = None) -> Any:
+        return live.require("get_rt_history", {"session_id": session_id, "revision": revision, "texture": texture, "window_id": window_id})
+
+    @app.tool(description=descriptions["get_rt_snapshot"])
+    def get_rt_snapshot(session_id: str, revision: int, eid: int, texture: str, mip: int = 0, slice: int = 0, range_min: float = 0.0, range_max: float = 1.0, raw_path: str | None = None, window_id: str | None = None) -> Any:
+        return live.require("get_rt_snapshot", {"session_id": session_id, "revision": revision, "eid": eid, "texture": texture, "mip": mip, "slice": slice, "range_min": range_min, "range_max": range_max, "raw_path": raw_path, "window_id": window_id})
 
     @app.tool(description=descriptions["get_event_edit_state"])
     def get_event_edit_state(eid: int | None = None, stage: str = "ps", show: bool = False, x: int = 0, y: int = 0, window_id: str | None = None) -> Any:

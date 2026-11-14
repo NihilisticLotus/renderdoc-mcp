@@ -1,5 +1,9 @@
 """Event edits use the native CaptureContext transaction owner, never ReplaceResource."""
 import math
+import hashlib
+import base64
+import os
+import tempfile
 import struct
 import renderdoc as rd
 from .base import BridgeService, invoke_replay_checked
@@ -213,4 +217,137 @@ class EventEditService(BridgeService):
             self.validate(params, True)
             error = self.ctx.UndoEventEdit(params["session_id"], params["revision"])
             return self.response(self.snapshot()[0], error)
+        return self.invoke(run)
+
+    def validate_b2(self, params):
+        if isinstance(params.get("revision"), bool) or not isinstance(params.get("revision"), int):
+            raise ValueError("B2 operations require an explicit integer edit revision")
+        self.validate(params, True)
+        if not callable(getattr(self.ctx, "EditSharedBufferRange", None)):
+            raise RuntimeError("This frontend does not support B2 analysis or shared Buffer edits")
+
+    @staticmethod
+    def resource(r, name, textures=False):
+        resources = r.GetTextures() if textures else r.GetBuffers()
+        for item in resources:
+            if str(item.resourceId) == name:
+                return item
+        raise ValueError("Resource does not identify a captured {}".format("texture" if textures else "buffer"))
+
+    def shared_state(self):
+        data = {"session_id": self.ctx.GetCaptureSessionID(), "revision": self.ctx.EventEditRevision(),
+                "undo_count": self.ctx.EventEditUndoCount(), "eid": self.ctx.CurEvent(),
+                "enabled": bool(rd.GetConfigSetting("Replay.SharedBufferEdits").data.basic.b), "patches": []}
+        def collect(r):
+            for patch in r.GetSharedBufferPatches():
+                payload = bytes(patch.data)
+                data["patches"].append({"buffer": str(patch.buffer), "offset": patch.byteOffset,
+                    "length": len(payload), "sha256": hashlib.sha256(payload).hexdigest()})
+        invoke_replay_checked(self.ctx, collect)
+        return data
+
+    def get_shared_buffer_state(self, params):
+        def run():
+            self.validate_b2(params)
+            return self.response(self.shared_state())
+        return self.invoke(run)
+
+    def set_shared_buffer_editing_enabled(self, params):
+        def run():
+            self.validate_b2(params)
+            if not isinstance(params.get("enabled"), bool):
+                raise ValueError("enabled must be boolean")
+            error = self.ctx.SetSharedBufferEditingEnabled(params["session_id"], params["enabled"])
+            return self.response(self.shared_state(), error)
+        return self.invoke(run)
+
+    def apply_shared_buffer_edit(self, params):
+        def run():
+            self.validate_b2(params)
+            offset, length = params["offset"], params["length"]
+            if any(isinstance(v, bool) or not isinstance(v, int) for v in (offset, length)) or offset < 0 or not 0 < length <= 16777216:
+                raise ValueError("Shared range requires a nonnegative offset and 1..16 MiB length")
+            reset = params.get("reset", False)
+            inputs = [params.get("data_hex") is not None, params.get("data_path") is not None]
+            if (reset and any(inputs)) or (not reset and sum(inputs) != 1):
+                raise ValueError("Supply exactly one byte source, or reset without a byte source")
+            payload = b""
+            if params.get("data_path") is not None:
+                with open(params["data_path"], "rb") as f:
+                    payload = f.read(length + 1)
+            elif params.get("data_hex") is not None:
+                if len(params["data_hex"]) > length * 3:
+                    raise ValueError("Hex payload exceeds the requested range")
+                payload = bytes.fromhex(params["data_hex"])
+            if not reset and len(payload) != length:
+                raise ValueError("Payload length must equal the requested shared range")
+            native = []
+            invoke_replay_checked(self.ctx, lambda r: native.append(self.resource(r, params["buffer"]).resourceId))
+            error = self.ctx.EditSharedBufferRange(params["session_id"], params["revision"],
+                                                   native[0], offset, length, payload)
+            return self.response(self.shared_state(), error)
+        return self.invoke(run)
+
+    def get_rt_history(self, params):
+        def run():
+            self.validate_b2(params)
+            data = {"session_id": self.ctx.GetCaptureSessionID(), "revision": self.ctx.EventEditRevision(),
+                    "selected_eid": self.ctx.CurSelectedEvent(), "effective_eid": self.ctx.CurEvent()}
+            def collect(r):
+                texture = self.resource(r, params["texture"], True)
+                data.update(texture=str(texture.resourceId), width=texture.width, height=texture.height,
+                            mips=texture.mips, slices=texture.arraysize, samples=texture.msSamp,
+                            format=str(texture.format.Name()), events=[{"eid": u.eventId, "usage": str(u.usage)}
+                                for u in r.GetUsage(texture.resourceId)])
+            invoke_replay_checked(self.ctx, collect)
+            return self.response(data)
+        return self.invoke(run)
+
+    def get_rt_snapshot(self, params):
+        def run():
+            self.validate_b2(params)
+            for name in ("eid", "mip", "slice"):
+                value = params.get(name, 0)
+                if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                    raise ValueError("{} must be a nonnegative integer".format(name))
+            minimum, maximum = params.get("range_min", 0.0), params.get("range_max", 1.0)
+            if not math.isfinite(minimum) or not math.isfinite(maximum) or minimum >= maximum:
+                raise ValueError("Display range must be finite and increasing")
+            selected, effective = self.ctx.CurSelectedEvent(), self.ctx.CurEvent()
+            data = {"session_id": self.ctx.GetCaptureSessionID(), "revision": self.ctx.EventEditRevision()}
+            native = []
+            def collect(r):
+                texture = self.resource(r, params["texture"], True)
+                sub = rd.Subresource()
+                sub.mip, sub.slice, sub.sample = params.get("mip", 0), params.get("slice", 0), 0
+                snapshot = r.GetTextureSnapshotAtEvent(params["eid"], texture.resourceId, sub,
+                                                        rd.CompType.Typeless, minimum, maximum)
+                if snapshot.error:
+                    raise RuntimeError(snapshot.error)
+                payload, preview = bytes(snapshot.data), bytes(snapshot.preview)
+                native.append(payload)
+                data.update(eid=snapshot.eventId, texture=str(texture.resourceId),
+                            mip=sub.mip, slice=sub.slice, format=str(texture.format.Name()),
+                            byte_length=len(payload), sha256=hashlib.sha256(payload).hexdigest(),
+                            prefix_hex=payload[:256].hex(),
+                            preview={"encoding": "RGB8", "width": snapshot.width, "height": snapshot.height,
+                                     "base64": base64.b64encode(preview).decode("ascii")})
+            invoke_replay_checked(self.ctx, collect)
+            self.validate_b2(params)
+            if (selected, effective) != (self.ctx.CurSelectedEvent(), self.ctx.CurEvent()):
+                raise RuntimeError("Selection changed during temporary analysis")
+            data.update(selected_eid=selected, effective_eid=effective)
+            path = params.get("raw_path")
+            if path:
+                path = os.path.abspath(path)
+                fd, temporary = tempfile.mkstemp(prefix=".rt-snapshot-", dir=os.path.dirname(path))
+                try:
+                    with os.fdopen(fd, "wb") as f:
+                        f.write(native[0])
+                    os.replace(temporary, path)
+                finally:
+                    if os.path.exists(temporary):
+                        os.unlink(temporary)
+                data["raw_path"] = path
+            return self.response(data)
         return self.invoke(run)

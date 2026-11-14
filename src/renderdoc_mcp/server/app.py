@@ -63,6 +63,11 @@ OFFLINE_BOOTSTRAP_TOOLS: tuple[ToolSpec, ...] = (
 
 
 LIVE_BRIDGE_TOOLS: tuple[ToolSpec, ...] = (
+    ToolSpec("get_shared_buffer_state", True, "Read persistent Buffer overlays and the shared GUI/MCP undo revision without changing selection."),
+    ToolSpec("set_shared_buffer_editing_enabled", True, "Explicitly opt in to persistent Buffer editing for this process; defaults off."),
+    ToolSpec("apply_shared_buffer_edit", True, "Set or reset an exact shared Buffer byte range for all events; uses the B1 GUI/MCP undo stack. Unsupported GPU-write, indirect or aliased dependencies return errors."),
+    ToolSpec("get_rt_history", True, "List a captured texture's event usage without changing selection."),
+    ToolSpec("get_rt_snapshot", True, "Read native texture bytes plus a separate RGB8 preview at an event, restoring effective replay and GUI selection before returning. Optional raw_path atomically exports native bytes. Single-sample 2D mip/slice only."),
     ToolSpec("get_event_edit_state", True, "Read capture session, revision, bindings, shared undo state and unscaled RGBA32_FLOAT pixel at x/y (default 0/0); optionally select an event and show the editor."),
     ToolSpec("set_event_editing_enabled", True, "Explicitly enable or disable event registration for the active native frontend process. Does not persist configuration."),
     ToolSpec("apply_event_shader_edit", True, "Compile and apply an event-scoped Shader with independent RGBA32_FLOAT preview. Uses shared GUI undo, never global replacement."),

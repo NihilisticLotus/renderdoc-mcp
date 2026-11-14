@@ -36,6 +36,9 @@ class BridgeServer(QObject):
         self.info_file = os.path.join(self.instance_dir, "info.json")
         self._timer = None
         self._thread = None
+        self._heartbeat_thread = None
+        self._heartbeat_lock = threading.Lock()
+        self._heartbeat_status = {}
         self._stop_event = threading.Event()
         self._running = False
         os.makedirs(IPC_DIR, exist_ok=True)
@@ -48,6 +51,10 @@ class BridgeServer(QObject):
         self._stop_event.clear()
         self._cleanup_instance_files()
         self._cleanup_stale_instances()
+        # Metadata and replay callbacks may wait for the GUI/replay queue. Liveness must not.
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_main,
+            name="renderdoc_mcp_heartbeat", daemon=True)
+        self._heartbeat_thread.start()
         if QTimer is not None:
             self._timer = QTimer(self)
             self._timer.timeout.connect(self._poll)
@@ -66,7 +73,15 @@ class BridgeServer(QObject):
         if self._thread is not None:
             self._thread.join(timeout=1.0)
             self._thread = None
+        if self._heartbeat_thread is not None:
+            self._heartbeat_thread.join(timeout=1.0)
+            self._heartbeat_thread = None
         self._cleanup_instance_dir()
+
+    def _heartbeat_main(self):
+        while not self._stop_event.is_set():
+            self._write_heartbeat()
+            self._stop_event.wait(0.25)
 
     def _thread_main(self):
         while not self._stop_event.is_set():
@@ -154,6 +169,7 @@ class BridgeServer(QObject):
             "pid": os.getpid(),
             "started_at": self.started_at,
             "updated_at": time.time(),
+            "heartbeat_status": dict(self._heartbeat_status),
         }
         describe = getattr(self.handler, "describe_instance", None)
         if callable(describe):
@@ -161,14 +177,21 @@ class BridgeServer(QObject):
             info.update(details)
         return info
 
+    def _write_heartbeat(self):
+        # Only file I/O here: no capture, UI or replay calls on this thread.
+        with self._heartbeat_lock:
+            started = time.monotonic()
+            try:
+                temporary = self.heartbeat_file + ".tmp"
+                with open(temporary, "w", encoding="utf-8") as handle:
+                    handle.write(str(time.time()))
+                os.replace(temporary, self.heartbeat_file)
+                self._heartbeat_status = {"elapsed": time.monotonic() - started, "error": None}
+            except OSError as exc:
+                self._heartbeat_status = {"elapsed": time.monotonic() - started, "error": str(exc)}
+
     def _write_liveness(self):
-        try:
-            temporary = self.heartbeat_file + ".tmp"
-            with open(temporary, "w", encoding="utf-8") as handle:
-                handle.write(str(time.time()))
-            os.replace(temporary, self.heartbeat_file)
-        except OSError:
-            pass
+        self._write_heartbeat()
         try:
             self._write_json_atomic(self.info_file, self._instance_info())
         except OSError:
