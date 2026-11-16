@@ -264,3 +264,14 @@ FrameGraphService在原UI/Replay队列只读采集CurRootActions/GetResources/Ge
 无工具/输入schema、CLI/DLL/helper、Python绑定/类型别名、日志路径或安装布局变更。170单测、79工具完整schema哈希08baa7a1f619c678a4c9a189300b701c6c420aa48cdf313155b7c6156500e730不变。双架构GUI34/2030；四组新source bridge窗口PID61784/12380/67476/58880通过646+4检查，真实Codex线程续接、fresh GUI回执恢复及自建进程终止后的写锁恢复另有验收。主仓stage5-investigation.md/json提供完整PID/产物/RDC/截图与限制。
 
 本批仅配套兼容文档，无安装bridge部署；五个egg-info修改未纳入。GPU驱动崩溃回滚、其他平台/游戏帧未验证；API/ACP继续。
+
+
+## 2026-11-16 B4.2 HTTP AI 接入
+
+原生GUI新增AISession及四种HTTP协议：OpenAI Chat兼容、Responses、Anthropic Messages、Google Gemini；Codex仍默认离线首选。工具只通过既有AIWorkspace/AIHostClient/Host任务入口，沿用capture UUID/revision、原UI/Replay及统一undo。HTTP结束记录与工具参数完整验证后才派发；停止、未知回执及恢复不自动重试写入。describe回调绑定原provider/thread/turn，禁止切换后的迟到回执串入新会话。
+
+Windows使用系统WinHTTP TLS和证书校验，不要求升级Qt或安装旧OpenSSL。配置/调查只存凭据环境变量名称；HTTP恢复重建可读历史，保存的工具调用不执行，本地thread不是远端会话。实际工具名及79个完整输入schema保持08baa7a1f619c678a4c9a189300b701c6c420aa48cdf313155b7c6156500e730。
+
+本地170单测、双架构GUI34/2030/Python一致，四协议驱动真实双API原生编辑/RT/撤销/失败清理与邻居隔离；系统TLS证书正反例、125%缩放及真实Codex回归见主仓fork-sync-b4-stage2-api-20261116.md/json。四家远端付费API没有凭据实连，非Windows网络及游戏帧未验证。
+
+本仓仅配套文档，无运行时/schema变更；五个既有egg-info修改保留，未更新安装bridge或C:/RenderDocCustom。继续ACP适配，B4不宣称整体完成。
