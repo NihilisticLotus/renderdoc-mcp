@@ -5,6 +5,7 @@ from .domains.camera import ReplayCameraService
 from .domains.event_edit import EventEditService
 from .domains.workflow import WorkflowService
 from .domains.frame_graph import FrameGraphService
+from .domains.texture_region import TextureRegionService
 from .runtime_identity import describe_runtime
 from .task_host import HostTaskService
 
@@ -19,6 +20,7 @@ class RequestHandler:
         event_edit_service = EventEditService(ctx)
         self._handlers = {
             "get_frame_graph": FrameGraphService(ctx).run,
+            "get_texture_region": TextureRegionService(ctx).run,
             "get_workflow_capabilities": WorkflowService(ctx).capabilities,
             "shader_workspace": event_edit_service.shader_workspace,
             "shader_parameters": event_edit_service.shader_parameters,

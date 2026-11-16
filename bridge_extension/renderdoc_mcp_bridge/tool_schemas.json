@@ -2327,6 +2327,69 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "eid": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "mip": {
+          "default": 0,
+          "type": "integer"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "rid": {
+          "type": "string"
+        },
+        "sample": {
+          "default": 0,
+          "type": "integer"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "slice": {
+          "default": 0,
+          "type": "integer"
+        },
+        "type_cast": {
+          "default": "Typeless",
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "window_id": {
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "window_id",
+        "session_id",
+        "revision",
+        "eid",
+        "rid",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "type": "object"
+    },
+    "name": "get_texture_region"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "window_id": {
           "type": "string"
         }

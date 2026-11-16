@@ -244,3 +244,14 @@ FrameGraphService在原UI/Replay队列只读采集CurRootActions/GetResources/Ge
 本地164单测、双架构Development/GUI各32例2002断言/Python一致；四组D3D11/12 GUI PID67844/61360/61676/32696，通过新runtime/源bridge共470+4检查，另PID34236能力检查120+1。覆盖双基线、分页/用途、full/live编辑后分析、FP32与统一undo A/B/A、切换关闭陈旧拒绝。详细产物/RDC/bridge/SHA/截图见主仓docs/diagnostics/fork-sync-b4-stage3-frame-graph-20261116.json。
 
 未部署安装bridge或C:/RenderDocCustom；保留既有egg-info修改。未验证其他GPU API/Mac/Linux，也不声称捕获usage反映修改Shader的动态访问。API/ACP、RT圈选与任务调查恢复继续。
+
+
+## 2026-11-16 B4.4 RT 圈选数值证据
+
+新增`get_texture_region`，显式window_id/capture UUID/revision/EID/rid、矩形与mip/slice/sample/type_cast。D3D11/12原生PickPixel至多9个去重网格点；typed整数、解码浮点值/FP32位与显示快照分开，不是整区统计或原始存储字节。保持当前selected/effective EID，不SetFrameEvent、不另建Replay/undo。其他API、过期捕获、无效范围/隐式MSAA resolve明确失败。
+
+现79工具，原78完整输入descriptor保持一致；schema SHA256 08baa7a1f619c678a4c9a189300b701c6c420aa48cdf313155b7c6156500e730。GUI新增原生CPU标注入口，复用同Host/UI/Replay；CLI/DLL/helper/导出/Python类型别名、日志路径与安装布局不变，无controller/invoker/代理ABI变化。
+
+170单测通过；新Development x64/x86 GUI各32例2002断言/Python一致。实际源桥接窗口PID58712/45588/12420/44352，四组698+4检查；x64真实MSAA sample2补验PID47412/59148共342+2；实际array/mip、full/live事件编辑后分析、浮点原值与撤销A/B/A、主题/关闭生命周期通过。主仓stage4-rt-annotation.md/json记录RDC、产物、loaded DLL、窗口、截图SHA和真实本机Codex图像问答。
+
+本批不部署安装bridge，不动五个egg-info修改。真实3D纹理/整数RT、x86 MSAA、其他GPU API、远程GPU/Mac/Linux和游戏帧未覆盖；B4.5持久化恢复及API/ACP继续。
