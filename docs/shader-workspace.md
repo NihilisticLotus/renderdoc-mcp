@@ -71,3 +71,30 @@ SHA256内容对象，RDC外部引用。单写者、缺失/损坏对象、版本�
 本批75工具，旧74项schema保持不变；125项MCP本地测试通过。实际GUI/PID/产物哈希与
 项目回放矩阵在主仓库 `docs/diagnostics/fork-sync-b3-stage3-20261116.md/json`。
 未部署、未修改安装桥接。原生3D/UV仍为B3.4后续阶段。
+
+## B3.4 原生 3D/UV 工作区
+
+`mesh_workspace` 进入同一个 CaptureContext/GUI/回放队列，不保存 Python 侧几何或撤销栈。
+`state` 返回 pending/ready/error、捕获身份、可用 UV/纹理绑定、拓扑哈希与 `geometry_id`。
+其余操作需要当前 `session_id` 和 `edit_revision`；读取状态不会自动开启事件编辑。
+
+| 操作 | 契约 |
+| --- | --- |
+| show | 显式显示网格/UV联动面板；等待 `pending=false` 后使用新状态 |
+| configure | `stage` 使用原生 MeshDataStage 数值、`instance/view` 从0开始；先等待上下文刷新，再选择 `available_channels/available_textures` 中的精确键。整条请求先预检，无效字段不部分修改UI |
+| configure | `mode=0/1/2` 为点/边/面；`channels=0..15` 为RGBA位掩码，`flip` 为纹理翻转。显示转换不改变捕获或浮点结果 |
+| select | 必须携带当前 `topology_hash` 和 `geometry_id`，`selection` 是十进制字符串数组。面键为三角形序号；点键为当前阶段的物理顶点索引；边键为 `(minIndex << 32) | maxIndex`。保持64位精度 |
+| pick | 当前 `geometry_id`；`x/y` 是原生3D视口的逻辑像素坐标，`extend` 扩展选区。使用原生实际矩阵，不是自行估算投影 |
+| focus | 聚焦当前选区；不改变回放资源或undo |
+
+选区身份包含 UUID/revision、事件、实例、view、输入/输出阶段及 primitive/corner；同位置不同索引
+保留 UV 接缝，不猜测 VS 输入/输出对应关系。陈旧任务或请求拒绝，关闭捕获排空输出。
+本地 D3D11/D3D12 原生覆盖可用；远程、其他API或不能可靠解析的路径明确返回错误。
+
+项目保存相机/投影/轴映射、UV通道/缩放平移、纹理和选区。`open/match` 仅在RDC内容匹配后恢复CPU视图；
+`apply`仍显式执行B3.3组合事务，原GUI/MCP入口一次撤销。VS应用指定 `independent_float=false`；
+PS可继续使用独立RGBA32_FLOAT。没有更改既有75工具输入schema，新增工具后共76项。
+
+本轮127项MCP测试通过；实际双架构、双API夹具与StarRail/Control所选事件记录位于主仓库
+`docs/diagnostics/fork-sync-b3-stage4-20261116.md/json`，包含PID、加载DLL路径/哈希和截图。
+未部署、未修改安装桥接；既有五个egg-info修改保留。

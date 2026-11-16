@@ -113,6 +113,19 @@ class EventEditService(BridgeService):
         invoke_replay_checked(self.ctx, collect)
         return data, native
 
+    def mesh_workspace(self, params):
+        def run():
+            if not callable(getattr(self.ctx, "ShaderWorkspaceCommand", None)):
+                raise RuntimeError("This frontend does not support the native mesh workspace")
+            request = {key: value for key, value in params.items() if value is not None}
+            if request.get("operation") not in ("state", "show", "configure", "select", "focus", "pick"):
+                raise ValueError("Unknown mesh workspace operation")
+            request["operation"] = "mesh_" + request["operation"]
+            result = json.loads(self.ctx.ShaderWorkspaceCommand(json.dumps(request, ensure_ascii=False)))
+            return self.response(result.get("data", {}), result.get("error") if not result.get("ok") else None,
+                                 "mesh_workspace_failed")
+        return self.invoke(run)
+
     def shader_project(self, params):
         def run():
             if not callable(getattr(self.ctx, "ShaderWorkspaceCommand", None)):

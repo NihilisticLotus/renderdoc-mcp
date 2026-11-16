@@ -216,3 +216,18 @@ StarRail双架构和Control x64的双基线/事件编辑/FP32/A-B-A。机器证�
   discovery, installed launchers and bridge directories are unchanged. No deployed runtime updated.
 - Actual tools/list: 75, with all prior74 input schemas identical. New project errors preserve native
   diagnostics and returned revision/recovery state. Local MCP suite:125 passed.
+
+### 2026-11-16 B3.4 mesh workspace producer/consumer delta
+
+- Native frontend adds `IReplayOutput.SetMeshSelection/GetMeshPreviewTransform` and `ICamera.GetState/SetState`,
+  with reflected CPU payloads and both Python builds. Mesh commands continue through the existing
+  `ShaderWorkspaceCommand`, GUI identity and replay queue; no second MCP host or undo state.
+- Adds `mesh_workspace(state/show/configure/select/focus/pick)` only: 76 actual tools, prior75 input schemas
+  unchanged, schema SHA256 `814c1f4585e4bf5f8337309ce9d2d6c42dcc0c62f3f060a6f01165ba222664ce`.
+  Session/revision and geometry/topology mismatch errors preserve native messages.
+- Local D3D11/D3D12 triangles and native output verified with owned dual-architecture fixtures,
+  Chinese/English and RDLight/RDDark, fractional scaling; selected StarRail/Control event project A/B/A
+  uses actual built DLLs and fresh stdio. Does not claim GL/Vulkan/remote/Metal selection support.
+- 127 local MCP tests passed. Full producer evidence, executable/DLL/RDC hashes and owned PIDs:
+  main repository `docs/diagnostics/fork-sync-b3-stage4-20261116.md/json`.
+- Source bridge only. No installed bridge or `C:/RenderDocCustom` deployment, no unrelated process closure.

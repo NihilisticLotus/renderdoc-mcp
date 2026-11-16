@@ -146,6 +146,7 @@ class LiveToolRegistry:
             "shader_workspace": self._shader_workspace,
             "shader_parameters": self._shader_parameters,
             "shader_project": self._shader_project,
+            "mesh_workspace": self._mesh_workspace,
             "get_event_edit_state": self._get_event_edit_state,
             "get_shared_buffer_state": self._get_shared_buffer_state,
             "set_shared_buffer_editing_enabled": self._set_shared_buffer_editing_enabled,
@@ -490,6 +491,10 @@ class LiveToolRegistry:
     def _get_rt_snapshot(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
         return self.client.call("get_rt_snapshot", clean_params, window_id=window_id)
+
+    def _mesh_workspace(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("mesh_workspace", clean_params, window_id=window_id)
 
     def _shader_project(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
@@ -1236,6 +1241,20 @@ def maybe_create_fastmcp() -> Any | None:
     @app.tool(description=descriptions["get_rt_snapshot"])
     def get_rt_snapshot(session_id: str, revision: int, eid: int, texture: str, mip: int = 0, slice: int = 0, range_min: float = 0.0, range_max: float = 1.0, raw_path: str | None = None, window_id: str | None = None) -> Any:
         return live.require("get_rt_snapshot", {"session_id": session_id, "revision": revision, "eid": eid, "texture": texture, "mip": mip, "slice": slice, "range_min": range_min, "range_max": range_max, "raw_path": raw_path, "window_id": window_id})
+
+    @app.tool(description=descriptions["mesh_workspace"])
+    def mesh_workspace(operation: Literal["state", "show", "configure", "select", "focus", "pick"],
+                       session_id: str | None = None, edit_revision: int | None = None,
+                       stage: int | None = None, instance: int | None = None, view: int | None = None,
+                       channel: str | None = None, texture: str | None = None, mode: int | None = None,
+                       channels: int | None = None, flip: bool | None = None,
+                       topology_hash: str | None = None, geometry_id: str | None = None, selection: list[str] | None = None,
+                       x: float | None = None, y: float | None = None, extend: bool = False,
+                       window_id: str | None = None) -> Any:
+        return live.require("mesh_workspace", dict(operation=operation, session_id=session_id,
+            edit_revision=edit_revision, stage=stage, instance=instance, view=view, channel=channel,
+            texture=texture, mode=mode, channels=channels, flip=flip, topology_hash=topology_hash, geometry_id=geometry_id, selection=selection,
+            x=x, y=y, extend=extend, window_id=window_id))
 
     @app.tool(description=descriptions["shader_project"])
     def shader_project(operation: Literal["state", "open", "save", "match", "apply"],
