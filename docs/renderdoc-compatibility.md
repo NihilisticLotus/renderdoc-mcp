@@ -175,3 +175,22 @@ fresh tools/list：原60项schema逐项不变，新增6项，共66项；最终sc
 113项本地回归通过，fresh tools/list及真实GUI/MCP证据见[B2用法与边界](b2-history-shared-buffer.md)。
 主仓库13个独立回放进程验证双架构/双API/双语浅深、历史/共享/统一撤销和真实RDC；
 原生接口未在Mac/Linux、新远程会话或设备故障注入条件下验收。本轮不部署、不安装bridge、不重启已有host。
+
+
+## 2026-11-16 B3.1 原生 Shader 工作区（未部署）
+
+| 生产者/消费者 | 兼容结论 |
+| --- | --- |
+| GUI/DLL/CLI/helper | 原名字、配置与双架构核心/helper配对不变；新界面只在窗口/ShaderViewer/事件编辑器显式打开 |
+| Python/SWIG | 两项 CaptureContext 接口、UI invoker及长事务GIL释放同步；两架构绑定一致性通过，旧/新模块别名仍共用type registry |
+| MCP schema | 新增 shader_workspace；旧72项完全不变，共73项；5项专用契约回归，118项全量回归通过 |
+| 状态与队列 | 文档、编译候选、原始/成功源码快照均由CaptureContext持有；bridge不另存状态。应用调用B1事件事务和统一撤销 |
+| IPC/配置/launcher | 沿用原bridge实例、capture UUID、文件协议、配置路径和launcher；不安装bridge，不修改旧窗口 |
+| 错误与不支持 | 旧前端缺接口明确拒绝；原生限制D3D11/D3D12；编译、ABI、外部冲突和陈旧revision错误保留，不自动退到全局替换 |
+
+实际fresh stdio对接构建目录中的新GUI：双架构双API四组合、中英浅深/缩放，以及
+StarRail双架构和Control x64的双基线/事件编辑/FP32/A-B-A。机器证据位于主仓库
+`docs/diagnostics/fork-sync-b3-stage1-20261116.json`，包含PID、GUI/实际DLL路径和SHA256。
+运行时仍Qt5.9.4/Python3.6.4。真实外部反编译器、非PS阶段、远程和设备故障注入未在本批验收。
+项目恢复、参数别名和3D/UV继续后续B3阶段；不能把当前save_draft当作完整项目恢复。
+本轮不部署、不更新安装桥接、不重启已有host；现有五个egg-info修改未纳入提交。

@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from renderdoc_mcp.capture_hints import attach_capture_hints, load_capture_hints
 from renderdoc_mcp.context_metadata import compare_capture_contexts, load_capture_context
@@ -143,6 +143,7 @@ class LiveToolRegistry:
     def __init__(self, client: LiveBridgeClient | None = None) -> None:
         self.client = client or LiveBridgeClient()
         self.handlers: dict[str, ToolHandler] = {
+            "shader_workspace": self._shader_workspace,
             "get_event_edit_state": self._get_event_edit_state,
             "get_shared_buffer_state": self._get_shared_buffer_state,
             "set_shared_buffer_editing_enabled": self._set_shared_buffer_editing_enabled,
@@ -487,6 +488,10 @@ class LiveToolRegistry:
     def _get_rt_snapshot(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
         return self.client.call("get_rt_snapshot", clean_params, window_id=window_id)
+
+    def _shader_workspace(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("shader_workspace", clean_params, window_id=window_id)
 
     def _get_event_edit_state(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
@@ -1221,6 +1226,19 @@ def maybe_create_fastmcp() -> Any | None:
     @app.tool(description=descriptions["get_rt_snapshot"])
     def get_rt_snapshot(session_id: str, revision: int, eid: int, texture: str, mip: int = 0, slice: int = 0, range_min: float = 0.0, range_max: float = 1.0, raw_path: str | None = None, window_id: str | None = None) -> Any:
         return live.require("get_rt_snapshot", {"session_id": session_id, "revision": revision, "eid": eid, "texture": texture, "mip": mip, "slice": slice, "range_min": range_min, "range_max": range_max, "raw_path": raw_path, "window_id": window_id})
+
+    @app.tool(description=descriptions["shader_workspace"])
+    def shader_workspace(operation: Literal["state", "create", "update", "compile", "apply", "save_draft", "attach_file", "decompile"],
+                         id: str | None = None, revision: int | None = None, session_id: str | None = None,
+                         edit_revision: int | None = None, stage: str | None = None,
+                         files: dict[str, str] | None = None, main_file: str | None = None,
+                         entry: str | None = None, path: str | None = None, name: str | None = None,
+                         tool: int | None = None, independent_float: bool = True, output_target: int = 0,
+                         show: bool = False, window_id: str | None = None) -> Any:
+        return live.require("shader_workspace", dict(operation=operation, id=id, revision=revision,
+            session_id=session_id, edit_revision=edit_revision, stage=stage, files=files,
+            main_file=main_file, entry=entry, path=path, name=name, tool=tool,
+            independent_float=independent_float, output_target=output_target, show=show, window_id=window_id))
 
     @app.tool(description=descriptions["get_event_edit_state"])
     def get_event_edit_state(eid: int | None = None, stage: str = "ps", show: bool = False, x: int = 0, y: int = 0, window_id: str | None = None) -> Any:

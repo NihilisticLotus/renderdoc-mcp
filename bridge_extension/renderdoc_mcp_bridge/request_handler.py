@@ -17,6 +17,7 @@ class RequestHandler:
         event_edit_service = EventEditService(ctx)
         self._handlers = {
             "get_workflow_capabilities": WorkflowService(ctx).capabilities,
+            "shader_workspace": event_edit_service.shader_workspace,
             "get_event_edit_state": event_edit_service.get_event_edit_state,
             "get_shared_buffer_state": event_edit_service.get_shared_buffer_state,
             "set_shared_buffer_editing_enabled": event_edit_service.set_shared_buffer_editing_enabled,

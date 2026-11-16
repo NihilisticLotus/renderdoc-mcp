@@ -1,4 +1,5 @@
 """Event edits use the native CaptureContext transaction owner, never ReplaceResource."""
+import json
 import math
 import hashlib
 import base64
@@ -111,6 +112,28 @@ class EventEditService(BridgeService):
                     "buffer": str(cb.resource), "offset": cb.byteOffset, "size": size, "active": current.active})
         invoke_replay_checked(self.ctx, collect)
         return data, native
+
+    def shader_workspace(self, params):
+        # Native UI owns every document, compiler snapshot and runtime transaction.
+        def run():
+            if not callable(getattr(self.ctx, "ShaderWorkspaceCommand", None)):
+                raise RuntimeError("This frontend does not support the B3 Shader workspace")
+            request = {key: value for key, value in params.items() if value is not None and key != "show"}
+            if request.get("operation") not in ("state", "create", "update", "compile", "apply", "save_draft", "attach_file", "decompile"):
+                raise ValueError("Unknown workspace operation")
+            if "stage" in request:
+                if request["stage"] not in self.STAGES:
+                    raise ValueError("Invalid Shader stage")
+                request["stage"] = int(self.STAGES[request["stage"]])
+            if params.get("show"):
+                self.ctx.ShowShaderWorkspace()
+            result = json.loads(self.ctx.ShaderWorkspaceCommand(json.dumps(request, ensure_ascii=False)))
+            data = result.get("data", {})
+            if "document" in result:
+                data["document"] = result["document"]
+            return self.response(data, result.get("error") if not result.get("ok") else None,
+                                 "shader_workspace_failed")
+        return self.invoke(run)
 
     def get_event_edit_state(self, params):
         def run():
