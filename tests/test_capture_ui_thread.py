@@ -42,6 +42,63 @@ class CaptureUIThreadTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "capture failure"):
             self.service()._invoke_on_ui_thread(fail, 1.0)
 
+    def test_timeout_cancels_queued_edit_before_late_ui_dispatch(self):
+        queued, edits = [], []
+        helper = types.SimpleNamespace(InvokeOntoUIThread=queued.append)
+        service = _module.CaptureStatusService(types.SimpleNamespace(
+            Extensions=lambda: types.SimpleNamespace(GetMiniQtHelper=lambda: helper)))
+        with self.assertRaises(_module.UIDispatchTimeout) as caught:
+            service._invoke_on_ui_thread(lambda: edits.append("changed"), 0)
+        self.assertTrue(caught.exception.cancelled)
+        queued[0]()
+        self.assertEqual(edits, [])
+        self.assertEqual(caught.exception.task.snapshot()["state"], "cancelled")
+
+    def test_running_timeout_is_pending_and_resolves_once(self):
+        started, release = threading.Event(), threading.Event()
+        edits = []
+        def edit():
+            started.set()
+            release.wait(2)
+            edits.append("changed")
+            return "receipt"
+        task = _module.UIDispatchTask(edit)
+        thread = threading.Thread(target=task.invoke)
+        thread.start()
+        try:
+            self.assertTrue(started.wait(1))
+            with self.assertRaises(_module.UIDispatchTimeout) as caught:
+                task.wait(0)
+            self.assertFalse(caught.exception.cancelled)
+            self.assertEqual(task.snapshot()["state"], "running")
+            self.assertFalse(task.cancel_queued())
+        finally:
+            release.set()
+            thread.join(2)
+        self.assertEqual(task.wait(1), "receipt")
+        task.invoke()
+        self.assertEqual(edits, ["changed"])
+        self.assertEqual(task.snapshot()["state"], "succeeded")
+
+    def test_invalid_timeout_never_schedules_callback(self):
+        queued = []
+        helper = types.SimpleNamespace(InvokeOntoUIThread=queued.append)
+        service = _module.CaptureStatusService(types.SimpleNamespace(
+            Extensions=lambda: types.SimpleNamespace(GetMiniQtHelper=lambda: helper)))
+        for timeout in (True, -1, float("nan"), float("inf"), None):
+            with self.assertRaises(ValueError):
+                service._invoke_on_ui_thread(lambda: None, timeout)
+        self.assertEqual(queued, [])
+
+    def test_completed_error_and_result_remain_observable(self):
+        def fail():
+            raise ValueError("original diagnostic")
+        task = _module.UIDispatchTask(fail)
+        task.invoke()
+        self.assertEqual(task.snapshot()["state"], "failed")
+        with self.assertRaisesRegex(ValueError, "original diagnostic"):
+            task.wait(0)
+
 
 if __name__ == "__main__":
     unittest.main()

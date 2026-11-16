@@ -3,33 +3,96 @@
 import os
 import time
 import threading
+import math
+import uuid
 
 import renderdoc as rd
 
 from .base import BridgeService
 
 
+class UIDispatchTimeout(RuntimeError):
+    """Timeout with a task handle: running work is not cancellation or rollback."""
+    def __init__(self, task, cancelled):
+        self.task = task
+        self.cancelled = cancelled
+        super().__init__(
+            "UI task {} cancelled before execution".format(task.task_id) if cancelled else
+            "UI task {} is still running; outcome is pending, do not retry edits".format(task.task_id))
+
+
+class UIDispatchTask:
+    """One bridge/UI handoff. RenderDoc remains the replay/undo owner.
+
+    The lock arbitrates dequeue vs cancellation. It is never held while executing
+    the callback, which may block on the existing native replay queue.
+    """
+    def __init__(self, callback):
+        self.task_id = str(uuid.uuid4())
+        self._callback = callback
+        self._lock = threading.Lock()
+        self._completed = threading.Event()
+        self._state = "queued"
+        self._value = None
+        self._error = None
+
+    def snapshot(self):
+        with self._lock:
+            return {"task_id": self.task_id, "state": self._state,
+                    "error": str(self._error) if self._error is not None else None}
+
+    def cancel_queued(self):
+        with self._lock:
+            if self._state != "queued":
+                return False
+            self._state = "cancelled"
+            self._callback = None
+            self._completed.set()
+            return True
+
+    def invoke(self):
+        with self._lock:
+            if self._state != "queued":
+                return
+            self._state = "running"
+            callback, self._callback = self._callback, None
+        value, error = None, None
+        try:
+            value = callback()
+        except Exception as exc:
+            error = exc
+        finally:
+            with self._lock:
+                self._value, self._error = value, error
+                self._state = "failed" if error is not None else "succeeded"
+                self._completed.set()
+
+    def wait(self, timeout):
+        self._completed.wait(timeout)
+        with self._lock:
+            if self._state == "queued":
+                self._state = "cancelled"
+                self._callback = None
+                self._completed.set()
+            if self._state in ("running", "cancelled"):
+                raise UIDispatchTimeout(self, self._state == "cancelled")
+            if self._error is not None:
+                raise self._error
+            return self._value
+
+
 class CaptureStatusService(BridgeService):
     def _invoke_on_ui_thread(self, callback, timeout):
-        # LoadCapture/CloseCapture manage Qt widgets and must not run on the
-        # fallback Python bridge worker when PySide2 is unavailable.
-        completed = threading.Event()
-        outcome = {}
-
-        def invoke():
-            try:
-                outcome["value"] = callback()
-            except Exception as exc:
-                outcome["error"] = exc
-            finally:
-                completed.set()
-
-        self.ctx.Extensions().GetMiniQtHelper().InvokeOntoUIThread(invoke)
-        if not completed.wait(timeout):
-            raise RuntimeError("Timed out waiting for capture lifecycle on the UI thread")
-        if "error" in outcome:
-            raise outcome["error"]
-        return outcome.get("value")
+        # Validate before scheduling: invalid waits must not leave live mutations.
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not math.isfinite(timeout) or timeout < 0:
+            raise ValueError("UI task timeout must be a finite non-negative number")
+        task = UIDispatchTask(callback)
+        try:
+            self.ctx.Extensions().GetMiniQtHelper().InvokeOntoUIThread(task.invoke)
+        except Exception:
+            task.cancel_queued()
+            raise
+        return task.wait(timeout)
 
     def run(self, params):
         params = params or {}
