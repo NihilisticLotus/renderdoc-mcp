@@ -3160,6 +3160,87 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "discard_unsaved": {
+          "default": false,
+          "type": "boolean"
+        },
+        "edit_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "operation": {
+          "enum": [
+            "state",
+            "open",
+            "save",
+            "match",
+            "apply"
+          ],
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "project_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "window_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "operation"
+      ],
+      "type": "object"
+    },
+    "name": "shader_project"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "edit_revision": {
           "anyOf": [
             {

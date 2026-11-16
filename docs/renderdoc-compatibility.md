@@ -203,3 +203,16 @@ StarRail双架构和Control x64的双基线/事件编辑/FP32/A-B-A。机器证�
 参数整数用字符串传输，事件与共享范围明确分开；原生不支持布局/初值源时错误原样传回。
 双架构参数GUI/MCP矩阵、四种语言主题组合与缩放，以及原工作区双架构回归通过；
 主仓库 `fork-sync-b3-stage2-20261116.json` 记录实际PID/哈希/截图。未部署，未安装桥接。
+
+
+### 2026-11-16 B3.3 project producer/consumer delta
+
+- GUI owns portable project files, matching, compilation and grouped replay history. Python bridge
+  forwards `shader_project` through the existing UI callback and native `ShaderWorkspaceCommand`;
+  it owns no duplicate replacement/undo state. Apply requires both project and capture edit revisions.
+- Controller adds `SetFrameEventForAnalysis`, mirrored in PythonInvoker/SWIG; unsupported remote
+  replay/API paths return errors. Existing IReplayOutput/driver methods and wire protocol stay intact.
+- GUI/CLI/DLL/Python module filenames, retained public identities, compatibility aliases, extension
+  discovery, installed launchers and bridge directories are unchanged. No deployed runtime updated.
+- Actual tools/list: 75, with all prior74 input schemas identical. New project errors preserve native
+  diagnostics and returned revision/recovery state. Local MCP suite:125 passed.
