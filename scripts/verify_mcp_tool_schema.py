@@ -16,6 +16,7 @@ from mcp.client.stdio import stdio_client
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BASELINE = ROOT / "tests" / "fixtures" / "mcp_tool_schema.json"
+BRIDGE_SCHEMA = ROOT / "bridge_extension" / "renderdoc_mcp_bridge" / "tool_schemas.json"
 
 
 async def read_contract() -> list[dict[str, object]]:
@@ -67,6 +68,8 @@ async def main() -> int:
     if args.update:
         args.baseline.parent.mkdir(parents=True, exist_ok=True)
         args.baseline.write_text(actual_json, encoding="utf-8")
+        if args.baseline == DEFAULT_BASELINE:
+            BRIDGE_SCHEMA.write_text(actual_json, encoding="utf-8")
         print(f"Updated {args.baseline}: {len(actual)} tools, schema sha256 {actual_hash}")
         return 0
 
@@ -86,6 +89,11 @@ async def main() -> int:
         print(f"Removed: {sorted(expected_names - actual_names)}", file=sys.stderr)
         return 1
 
+    if args.baseline == DEFAULT_BASELINE and (
+        not BRIDGE_SCHEMA.is_file() or json.loads(BRIDGE_SCHEMA.read_text(encoding="utf-8")) != actual
+    ):
+        print("Bridge description schemas differ from the public MCP contract.", file=sys.stderr)
+        return 1
     print(f"MCP input schema OK: {len(actual)} tools, schema sha256 {actual_hash}")
     return 0
 

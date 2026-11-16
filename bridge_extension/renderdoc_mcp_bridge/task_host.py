@@ -52,6 +52,16 @@ class HostTaskService:
             op = params.get("operation")
             if op == "capabilities":
                 return self.response(self.capabilities())
+            if op == "describe":
+                method = params.get("method")
+                if method not in self.handlers:
+                    raise ValueError("Unsupported Host method")
+                with open(os.path.join(os.path.dirname(__file__), "tool_schemas.json"), "r", encoding="utf-8") as handle:
+                    schemas = json.load(handle)
+                schema = next((item for item in schemas if item["name"] == method), None)
+                if schema is None:
+                    raise ValueError("No public MCP schema for this Host method")
+                return self.response(schema)
             with self._lock:
                 if op == "enable":
                     if self._shutdown:
@@ -165,7 +175,11 @@ class HostTaskService:
         try:
             result = self.handlers[request["method"]](copy.deepcopy(request["arguments"]))
             # Match the bridge JSON boundary without persisting Python/GPU handles.
-            return json.loads(json.dumps(result, ensure_ascii=False, allow_nan=False, default=str))
+            result = json.loads(json.dumps(result, ensure_ascii=False, allow_nan=False, default=str))
+            if isinstance(result, dict):
+                result.setdefault("meta", {})["capture_after"] = {
+                    "session_id": self.ctx.GetCaptureSessionID(), "revision": self.ctx.EventEditRevision()}
+            return result
         except BaseException as exc:
             # An exception after entering a handler is not proof that it did not
             # mutate native state. Preserve uncertainty instead of inviting retry.

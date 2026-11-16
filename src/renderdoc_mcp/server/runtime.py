@@ -1248,7 +1248,7 @@ def maybe_create_fastmcp() -> Any | None:
         return live.require("get_rt_snapshot", {"session_id": session_id, "revision": revision, "eid": eid, "texture": texture, "mip": mip, "slice": slice, "range_min": range_min, "range_max": range_max, "raw_path": raw_path, "window_id": window_id})
 
     @app.tool(description=descriptions["host_tasks"])
-    def host_tasks(operation: Literal["capabilities", "enable", "disable", "submit", "get", "list", "cancel"],
+    def host_tasks(operation: Literal["capabilities", "describe", "enable", "disable", "submit", "get", "list", "cancel"],
                    host_id: str | None = None, task_id: str | None = None,
                    session_id: str | None = None, revision: int | None = None,
                    method: str | None = None, arguments: dict[str, Any] | None = None,

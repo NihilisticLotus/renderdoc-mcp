@@ -2337,6 +2337,7 @@
         "operation": {
           "enum": [
             "capabilities",
+            "describe",
             "enable",
             "disable",
             "submit",

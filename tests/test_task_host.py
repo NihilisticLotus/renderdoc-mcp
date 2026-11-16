@@ -76,6 +76,31 @@ class HostTests(unittest.TestCase):
         self.assertFalse(fresh.command({'operation': 'submit'})['ok'])
         self.assertFalse(self.service.command({'operation': 'get', 'host_id': 'wrong'})['ok'])
 
+    def test_describe_uses_public_schema_without_starting_host_or_dispatching(self):
+        fresh = host.HostTaskService(self.ctx, {'get_event_edit_state': self.edit}, self.directory.name)
+        result = fresh.command({'operation': 'describe', 'method': 'get_event_edit_state'})
+        self.assertTrue(result['ok'], result)
+        self.assertEqual(result['data']['name'], 'get_event_edit_state')
+        self.assertEqual(result['data']['inputSchema']['properties']['stage']['default'], 'ps')
+        self.assertIn('eid', result['data']['inputSchema']['properties'])
+        self.assertFalse(fresh.capabilities()['enabled'])
+        self.assertTrue(self.queue.empty())
+        self.assertFalse(fresh.command({'operation': 'describe', 'method': 'open_capture'})['ok'])
+        self.assertFalse(self.service.command({'operation': 'describe', 'method': 'edit'})['ok'])
+
+    def test_post_handler_revision_is_observed_on_ui_before_later_edits(self):
+        def edit(params):
+            self.revision += 1
+            return self.edit(params)
+        self.service.handlers['edit'] = edit
+        params = self.submit()
+        self.queue.get(timeout=1)()
+        self.revision = 9
+        record = self.terminal(params)
+        self.assertEqual(record['result']['meta']['capture_after'],
+                         {'session_id': self.session, 'revision': 1})
+        self.assertEqual(record['request']['revision'], 0)
+
     def test_immutable_snapshot_duplicate_and_reconnect(self):
         params = self.submit()
         callback = self.queue.get(timeout=1)

@@ -31,3 +31,15 @@
 真实自有 D3D11/D3D12 RDC 通过新 stdio 客户端验证 Shader/CBuffer 编辑、FP32 原值、邻居不污染、GUI/Host 统一撤销、断线重连、取消/超时及关闭重开。新增工具是机器接口，没有新产品文案；沿用原 GUI 中英和浅深主题。
 
 本阶段未部署、未更新安装 bridge。内嵌 Codex app-server、流式 AI、帧图、RT 圈选和可停靠监视器继续 B4.2–B4.5，未冒充完成。
+
+
+## B4.2 原生 Codex 客户端接入（2026-11-16）
+
+- `host_tasks(operation="describe", method=...)` 在 Host 关闭时也能查询当前支持方法的公共输入 schema，不访问捕获或启动任务。扩展随包携带 `tool_schemas.json`；`verify_mcp_tool_schema.py --update` 同步公共快照和扩展副本，普通校验同时核对两者。
+- 输入合约仍为 77 工具，旧 76 个完全不变；仅 host_tasks 的 operation 增加 describe。schema SHA256：`04b09b5764831eea363f9ac396d3c46e5fb933fa9291c09a3fb445b9e8555a51`。
+- 原 handler 返回后仍在 UI 队列内采样 `result.meta.capture_after.session_id/revision`，这是本次操作后的事实快照。AI 只据此更新其已观察 revision；不能读取并接受任意后续 GUI 编辑的 revision。
+- 原生 AIWorkspace 以同 GUI PID 发现 bridge，经原 JSON 文件 IPC 和 Host 使用同一 CaptureContext、Replay 队列及 undo。无新外部服务、第二套替换表或 GPU 所有权；未修改旧工具的结果，仅 Host 包裹结果增加元信息。
+- 源码检查 `install_ext.py` 的 copytree 会携带 JSON；本轮只在隔离 GUI 显式加载源码扩展，未执行安装或部署。新 schema 不存在、方法不支持或 Host 不匹配均明确报错。
+- 158 项本地 MCP 单测通过，新增 default-off describe 与执行后 revision 采样测试；真实 Codex GUI/Host 调用及四组双 API/架构验收详见主仓 `fork-sync-b4-stage2-codex-20261116.md/.json`。
+
+后续仍需 API/ACP 适配、帧流程图、RT 圈选与完整 GUI 监视恢复；此批不宣称 B4 整体完成。
