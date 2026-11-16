@@ -147,6 +147,7 @@ class LiveToolRegistry:
             "shader_parameters": self._shader_parameters,
             "shader_project": self._shader_project,
             "mesh_workspace": self._mesh_workspace,
+            "host_tasks": self._host_tasks,
             "get_event_edit_state": self._get_event_edit_state,
             "get_shared_buffer_state": self._get_shared_buffer_state,
             "set_shared_buffer_editing_enabled": self._set_shared_buffer_editing_enabled,
@@ -491,6 +492,10 @@ class LiveToolRegistry:
     def _get_rt_snapshot(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
         return self.client.call("get_rt_snapshot", clean_params, window_id=window_id)
+
+    def _host_tasks(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("host_tasks", clean_params, window_id=window_id)
 
     def _mesh_workspace(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
@@ -1241,6 +1246,16 @@ def maybe_create_fastmcp() -> Any | None:
     @app.tool(description=descriptions["get_rt_snapshot"])
     def get_rt_snapshot(session_id: str, revision: int, eid: int, texture: str, mip: int = 0, slice: int = 0, range_min: float = 0.0, range_max: float = 1.0, raw_path: str | None = None, window_id: str | None = None) -> Any:
         return live.require("get_rt_snapshot", {"session_id": session_id, "revision": revision, "eid": eid, "texture": texture, "mip": mip, "slice": slice, "range_min": range_min, "range_max": range_max, "raw_path": raw_path, "window_id": window_id})
+
+    @app.tool(description=descriptions["host_tasks"])
+    def host_tasks(operation: Literal["capabilities", "enable", "disable", "submit", "get", "list", "cancel"],
+                   host_id: str | None = None, task_id: str | None = None,
+                   session_id: str | None = None, revision: int | None = None,
+                   method: str | None = None, arguments: dict[str, Any] | None = None,
+                   queue_timeout: float = 120.0, window_id: str | None = None) -> Any:
+        return live.require("host_tasks", dict(operation=operation, host_id=host_id, task_id=task_id,
+            session_id=session_id, revision=revision, method=method, arguments=arguments,
+            queue_timeout=queue_timeout, window_id=window_id))
 
     @app.tool(description=descriptions["mesh_workspace"])
     def mesh_workspace(operation: Literal["state", "show", "configure", "select", "focus", "pick"],

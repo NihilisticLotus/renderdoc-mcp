@@ -59,7 +59,7 @@ class UIDispatchTask:
         value, error = None, None
         try:
             value = callback()
-        except Exception as exc:
+        except BaseException as exc:
             error = exc
         finally:
             with self._lock:

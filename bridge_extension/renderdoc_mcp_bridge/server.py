@@ -37,6 +37,8 @@ class BridgeServer(QObject):
         self._timer = None
         self._thread = None
         self._heartbeat_thread = None
+        self._control_thread = None
+        self._request_lock = threading.Lock()
         self._heartbeat_lock = threading.Lock()
         self._heartbeat_status = {}
         self._stop_event = threading.Event()
@@ -55,6 +57,9 @@ class BridgeServer(QObject):
         self._heartbeat_thread = threading.Thread(target=self._heartbeat_main,
             name="renderdoc_mcp_heartbeat", daemon=True)
         self._heartbeat_thread.start()
+        self._control_thread = threading.Thread(target=self._control_main,
+            name="rendertest_host_control", daemon=True)
+        self._control_thread.start()
         if QTimer is not None:
             self._timer = QTimer(self)
             self._timer.timeout.connect(self._poll)
@@ -76,6 +81,12 @@ class BridgeServer(QObject):
         if self._heartbeat_thread is not None:
             self._heartbeat_thread.join(timeout=1.0)
             self._heartbeat_thread = None
+        if self._control_thread is not None:
+            self._control_thread.join(timeout=1.0)
+            self._control_thread = None
+        shutdown = getattr(self.handler, "shutdown", None)
+        if callable(shutdown):
+            shutdown()
         self._cleanup_instance_dir()
 
     def _heartbeat_main(self):
@@ -148,19 +159,36 @@ class BridgeServer(QObject):
             os.fsync(handle.fileno())
         os.replace(temp_path, path)
 
-    def _next_request_file(self):
-        try:
-            items = [
-                os.path.join(self.requests_dir, name)
-                for name in os.listdir(self.requests_dir)
-                if name.endswith(".json")
-            ]
-        except OSError:
+    def _claim_request(self, control):
+        # Claim once before handling. Host controls never wait on capture metadata,
+        # UI/replay handlers or the normal polling thread.
+        with self._request_lock:
+            try:
+                items = [os.path.join(self.requests_dir, name)
+                         for name in os.listdir(self.requests_dir) if name.endswith(".json")]
+                items.sort(key=os.path.getmtime)
+            except OSError:
+                return None
+            for path in items:
+                try:
+                    with open(path, "r", encoding="utf-8") as handle:
+                        request = json.load(handle)
+                    is_control = isinstance(request, dict) and request.get("method") == "host_tasks"
+                    if is_control != control:
+                        continue
+                    os.remove(path)
+                    if not isinstance(request, dict):
+                        raise ValueError("Bridge request must be an object")
+                    return request
+                except (OSError, ValueError):
+                    self._safe_remove(path)
+                    traceback.print_exc()
             return None
-        if not items:
-            return None
-        items.sort(key=lambda path: os.path.getmtime(path))
-        return items[0]
+
+    def _control_main(self):
+        while not self._stop_event.is_set():
+            self._poll(control=True)
+            self._stop_event.wait(0.05)
 
     def _instance_info(self):
         info = {
@@ -197,41 +225,31 @@ class BridgeServer(QObject):
         except OSError:
             pass
 
-    def _poll(self):
+    def _poll(self, control=False):
         if not self._running:
             return
-        self._write_liveness()
-        request_file = self._next_request_file()
-        if request_file is None:
+        if not control:
+            self._write_liveness()
+        request = self._claim_request(control)
+        if request is None:
             return
-
         try:
-            with open(request_file, "r", encoding="utf-8") as handle:
-                request = json.load(handle)
-            os.remove(request_file)
-
             try:
                 response = self.handler.handle(request)
             except Exception as exc:  # pragma: no cover - runtime safety
                 traceback.print_exc()
-                response = {
-                    "id": request.get("id"),
-                    "error": {
-                        "code": "internal_error",
-                        "message": str(exc),
-                    },
-                }
-
-            response_id = request.get("id")
-            if response_id:
-                response_file = os.path.join(self.responses_dir, "{}.json".format(response_id))
+                response = {"id": request.get("id"), "error": {
+                    "code": "internal_error", "message": str(exc)}}
+            response_id = str(request.get("id") or "unknown")
+            if any(c in response_id for c in ('/', '\\', ':')) or response_id in ('.', '..'):
+                raise ValueError("Invalid bridge response ID")
+            response_file = os.path.join(self.responses_dir, "{}.json".format(response_id))
+            if self._stop_event.is_set():
+                return
+            if control:
+                self._write_heartbeat()
             else:
-                response_file = os.path.join(self.responses_dir, "unknown.json")
-
-            # Replay/export can outlive the client's heartbeat freshness window.
-            # Publish fresh liveness before making the response observable, so a
-            # following request does not mistake this working instance for dead.
-            self._write_liveness()
+                self._write_liveness()
             self._write_json_atomic(response_file, response)
         except Exception:  # pragma: no cover - runtime safety
             traceback.print_exc()

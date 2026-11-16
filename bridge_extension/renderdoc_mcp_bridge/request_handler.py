@@ -5,6 +5,7 @@ from .domains.camera import ReplayCameraService
 from .domains.event_edit import EventEditService
 from .domains.workflow import WorkflowService
 from .runtime_identity import describe_runtime
+from .task_host import HostTaskService
 
 
 class RequestHandler:
@@ -79,6 +80,11 @@ class RequestHandler:
         }
         self._capture_service = capture_service
         self._runtime_version = runtime_version
+        self._task_host = HostTaskService(ctx, self._handlers)
+        self._handlers["host_tasks"] = self._task_host.command
+
+    def shutdown(self):
+        self._task_host.shutdown()
 
     def describe_instance(self):
         """Return lightweight metadata for bridge discovery."""

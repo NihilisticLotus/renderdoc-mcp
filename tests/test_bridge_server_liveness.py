@@ -43,6 +43,40 @@ class BridgeLivenessTests(unittest.TestCase):
                     server.stop()
                 self.assertFalse(Path(server.instance_dir).exists())
 
+    def test_host_control_is_responsive_while_normal_handler_is_blocked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            entered, release = threading.Event(), threading.Event()
+            calls = []
+            def handle(request):
+                calls.append(request['id'])
+                if request['method'] != 'host_tasks':
+                    entered.set()
+                    release.wait(3)
+                return {'id': request['id'], 'result': {'ok': True}}
+            handler = types.SimpleNamespace(handle=handle)
+            with patch.object(_module, 'IPC_DIR', directory), \
+                 patch.object(_module, 'INSTANCES_DIR', str(Path(directory) / 'instances')), \
+                 patch.object(_module, 'QTimer', None):
+                server = _module.BridgeServer(handler, bridge_id='control')
+                server.start()
+                try:
+                    for identity, method in [('slow', 'native_edit'), ('query', 'host_tasks')]:
+                        server._write_json_atomic(str(Path(server.requests_dir) / (identity + '.json')),
+                                                  {'id': identity, 'method': method})
+                        if identity == 'slow':
+                            self.assertTrue(entered.wait(1))
+                    end = time.monotonic() + 1
+                    path = Path(server.responses_dir) / 'query.json'
+                    while not path.exists() and time.monotonic() < end:
+                        time.sleep(.01)
+                    self.assertTrue(path.exists())
+                    self.assertFalse((Path(server.responses_dir) / 'slow.json').exists())
+                    self.assertEqual(calls.count('query'), 1)
+                    self.assertFalse(release.is_set())
+                finally:
+                    release.set()
+                    server.stop()
+
     def test_long_request_refreshes_heartbeat_before_response(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(_module, "IPC_DIR", directory), patch.object(_module, "INSTANCES_DIR", str(Path(directory) / "instances")):
