@@ -113,6 +113,19 @@ class EventEditService(BridgeService):
         invoke_replay_checked(self.ctx, collect)
         return data, native
 
+    def shader_parameters(self, params):
+        def run():
+            if not callable(getattr(self.ctx, "ShaderWorkspaceCommand", None)):
+                raise RuntimeError("This frontend does not support native Shader parameters")
+            request = {key: value for key, value in params.items() if value is not None}
+            if request.get("operation") not in ("list", "read", "alias", "write"):
+                raise ValueError("Unknown parameter operation")
+            request["operation"] = "parameter_" + request["operation"]
+            result = json.loads(self.ctx.ShaderWorkspaceCommand(json.dumps(request, ensure_ascii=False)))
+            return self.response(result.get("data", {}), result.get("error") if not result.get("ok") else None,
+                                 "shader_parameters_failed")
+        return self.invoke(run)
+
     def shader_workspace(self, params):
         # Native UI owns every document, compiler snapshot and runtime transaction.
         def run():

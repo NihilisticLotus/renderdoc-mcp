@@ -144,6 +144,7 @@ class LiveToolRegistry:
         self.client = client or LiveBridgeClient()
         self.handlers: dict[str, ToolHandler] = {
             "shader_workspace": self._shader_workspace,
+            "shader_parameters": self._shader_parameters,
             "get_event_edit_state": self._get_event_edit_state,
             "get_shared_buffer_state": self._get_shared_buffer_state,
             "set_shared_buffer_editing_enabled": self._set_shared_buffer_editing_enabled,
@@ -488,6 +489,10 @@ class LiveToolRegistry:
     def _get_rt_snapshot(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
         return self.client.call("get_rt_snapshot", clean_params, window_id=window_id)
+
+    def _shader_parameters(self, params: dict[str, Any]) -> Any:
+        clean_params, window_id = self._split_window_params(params)
+        return self.client.call("shader_parameters", clean_params, window_id=window_id)
 
     def _shader_workspace(self, params: dict[str, Any]) -> Any:
         clean_params, window_id = self._split_window_params(params)
@@ -1226,6 +1231,17 @@ def maybe_create_fastmcp() -> Any | None:
     @app.tool(description=descriptions["get_rt_snapshot"])
     def get_rt_snapshot(session_id: str, revision: int, eid: int, texture: str, mip: int = 0, slice: int = 0, range_min: float = 0.0, range_max: float = 1.0, raw_path: str | None = None, window_id: str | None = None) -> Any:
         return live.require("get_rt_snapshot", {"session_id": session_id, "revision": revision, "eid": eid, "texture": texture, "mip": mip, "slice": slice, "range_min": range_min, "range_max": range_max, "raw_path": raw_path, "window_id": window_id})
+
+    @app.tool(description=descriptions["shader_parameters"])
+    def shader_parameters(operation: Literal["list", "read", "alias", "write"], id: str, revision: int,
+                          identity: str | None = None, field: str | None = None,
+                          session_id: str | None = None, edit_revision: int | None = None,
+                          alias_revision: int | None = None, alias: str | None = None,
+                          value: str | None = None, scope: Literal["event", "shared"] | None = None,
+                          window_id: str | None = None) -> Any:
+        return live.require("shader_parameters", dict(operation=operation, id=id, revision=revision,
+            identity=identity, field=field, session_id=session_id, edit_revision=edit_revision,
+            alias_revision=alias_revision, alias=alias, value=value, scope=scope, window_id=window_id))
 
     @app.tool(description=descriptions["shader_workspace"])
     def shader_workspace(operation: Literal["state", "create", "update", "compile", "apply", "save_draft", "attach_file", "decompile"],

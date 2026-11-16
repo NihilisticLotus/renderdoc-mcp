@@ -37,3 +37,17 @@ Compiler flags are returned as an ordered array of name/value entries so repeate
 The workspace accepts only options that the current native compiler preserves, and requires a captured
 profile. Unsupported extra options fail explicitly; the compiled profile and encoding must match the
 capture. Generated reflection metadata is not misclassified as user-supplied compiler options.
+
+
+## B3.2 参数与别名
+
+`shader_parameters` 的 `list/read/alias/write` 全部进入原生工作区同一队列。
+别名身份由 Shader 字节内容、阶段、bind/space、完整物理布局构成；只改变显示。
+`list` 返回 blocks、fields、identity、人工 reuse_candidates 和 alias_revision。
+`alias` 需要 alias_revision；清空字符串删除别名。布局相同但内容不同不自动复用。
+`read/write` 显式选择 `scope=event|shared`，传捕获 session_id、文档 revision 和
+edit_revision。`value` 是字符串，64位整数不经过 JSON double；拒绝溢出/不可靠布局。
+事件写与持续共享写分别走 B1/B2，继续使用现有 GUI/MCP 撤销。
+前端不支持时明确报错。普通开关仍默认关闭；list/read 不自动启用编辑。
+原子草稿含完整别名字典，完整项目读取和组合应用仍属 B3.3。
+本批本地74工具，旧73 schema保持不变；实际122个MCP测试通过。
