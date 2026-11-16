@@ -255,3 +255,12 @@ FrameGraphService在原UI/Replay队列只读采集CurRootActions/GetResources/Ge
 170单测通过；新Development x64/x86 GUI各32例2002断言/Python一致。实际源桥接窗口PID58712/45588/12420/44352，四组698+4检查；x64真实MSAA sample2补验PID47412/59148共342+2；实际array/mip、full/live事件编辑后分析、浮点原值与撤销A/B/A、主题/关闭生命周期通过。主仓stage4-rt-annotation.md/json记录RDC、产物、loaded DLL、窗口、截图SHA和真实本机Codex图像问答。
 
 本批不部署安装bridge，不动五个egg-info修改。真实3D纹理/整数RT、x86 MSAA、其他GPU API、远程GPU/Mac/Linux和游戏帧未覆盖；B4.5持久化恢复及API/ACP继续。
+
+
+## 2026-11-16 B4.5 调查与任务恢复
+
+原生AIWorkspace增加独立CPU调查与任务监视，仍走AIHostClient/原Host/UI/Replay；Load只恢复证据与原回执，queued/running意图视为unknown，重新查询原Host ID，用户显式续接后新问题采用当前capture UUID/revision。64MiB单写者原子JSON、不保存GPU句柄/undo，问题源码与PNG保留完整哈希；显示面板销毁不销毁任务。显式批量查询最多16个在途，不压满64请求上限。原Host拒绝在活跃任务期间disable，客户端不另建重试或撤销。
+
+无工具/输入schema、CLI/DLL/helper、Python绑定/类型别名、日志路径或安装布局变更。170单测、79工具完整schema哈希08baa7a1f619c678a4c9a189300b701c6c420aa48cdf313155b7c6156500e730不变。双架构GUI34/2030；四组新source bridge窗口PID61784/12380/67476/58880通过646+4检查，真实Codex线程续接、fresh GUI回执恢复及自建进程终止后的写锁恢复另有验收。主仓stage5-investigation.md/json提供完整PID/产物/RDC/截图与限制。
+
+本批仅配套兼容文档，无安装bridge部署；五个egg-info修改未纳入。GPU驱动崩溃回滚、其他平台/游戏帧未验证；API/ACP继续。
