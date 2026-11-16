@@ -275,3 +275,21 @@ Windows使用系统WinHTTP TLS和证书校验，不要求升级Qt或安装旧Ope
 本地170单测、双架构GUI34/2030/Python一致，四协议驱动真实双API原生编辑/RT/撤销/失败清理与邻居隔离；系统TLS证书正反例、125%缩放及真实Codex回归见主仓fork-sync-b4-stage2-api-20261116.md/json。四家远端付费API没有凭据实连，非Windows网络及游戏帧未验证。
 
 本仓仅配套文档，无运行时/schema变更；五个既有egg-info修改保留，未更新安装bridge或C:/RenderDocCustom。继续ACP适配，B4不宣称整体完成。
+
+
+## 2026-11-16 B4.2 ACP v1 与受限 MCP 通道
+
+原生AIACPSession通过ACP v1驱动可信本机代理；由AIMCPChannel提供唯一rendertest_host工具，question_id绑定当前问题，再转同AIWorkspace/AIHostClient/原Host/UI/Replay。ACP进度不是执行请求；旧问题、未授权写入、错误版本和未知工具明确拒绝，取消/恢复不会重试未知原生任务。GUI仍默认本机Codex且离线。
+
+| Producer / Consumer | 兼容结论与实际验证 |
+| --- | --- |
+| GUI / owned代理 | qrendertest.exe新增内部--ai-mcp-stdio模式，在QApplication/Replay启动前运行；管道认证由临时子进程环境传入，不增加捕获服务或安装依赖 |
+| CLI / DLL / helper | 原文件名、双架构核心/helper、启动和捕获入口无变更；实际加载Development rendertest.dll路径和SHA见主仓stage2-acp JSON |
+| Python / SWIG aliases | 无公开类型或名称变更；两架构GUI单测Python一致，新的C++ provider/channel不暴露为另一套绑定 |
+| 配置 / 日志 / 安装路径 | 复用AI_ProviderProfile和.rti非运行时资料；ACP程序/参数可保存，凭据在代理自身配置，临时pipe/token不写调查；原bridge发现/日志根目录不变 |
+| MCP / Host输入输出 | 原79工具与schema SHA256 08baa7a1f619c678a4c9a189300b701c6c420aa48cdf313155b7c6156500e730不变；ACP私有单工具通道只是适配层，原task/capture UUID/revision及undo继续唯一归属 |
+| Fresh source bridge | 四组GUI PID83648/56472/82420/70176；双API、full/live、Shader/CBuffer/FP32、邻居、失败及GUI撤销840+4检查；真实Codex回归GUI80528/模型62144，HTTP回归GUI83048 |
+
+本地170单测和79工具实时schema验证通过；双架构Development GUI各41/2148和Python一致。原生ACP的自有进程夹具与真实模型Codex分开记录，详见主仓fork-sync-b4-stage2-acp-20261116.md/json。第三方ACP产品/远端账号、ACP v2、非Windows和本轮游戏帧未验证，不宣称OS沙箱。
+
+仅本兼容文档变化，无MCP运行时/schema更新；五个egg-info既有修改保留。不部署C:/RenderDocCustom、不更新已安装bridge，B5/B6/Metal范围保留。
