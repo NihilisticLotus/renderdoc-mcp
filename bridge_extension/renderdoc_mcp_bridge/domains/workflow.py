@@ -28,6 +28,13 @@ class WorkflowService(BridgeService):
             api_name = api.rsplit('.', 1)[-1] if api else None
             eligible = loaded and not missing and local is True and remote is False and api_name in ('D3D11', 'D3D12')
             enabled = bool(rd.GetConfigSetting('Replay.EventOverrides').data.basic.b) if not missing else None
+            host = all(callable(getattr(self.ctx, name, None)) for name in
+                       ('GetCaptureSessionID', 'EventEditRevision', 'Extensions'))
+            graph = host and all(callable(getattr(self.ctx, name, None)) for name in
+                ('CurRootActions', 'GetResources', 'GetResourceName', 'GetStructuredFile',
+                 'GetAction', 'CurEvent', 'CurSelectedEvent', 'Replay'))
+            config = self.ctx.Config() if callable(getattr(self.ctx, 'Config', None)) else None
+            codex = host and hasattr(config, 'AI_CodexExecutable')
             return {
                 'ok': True, 'data': {
                     'protocol_version': 1, 'runtime': describe_runtime(),
@@ -45,8 +52,9 @@ class WorkflowService(BridgeService):
                         'B1_event_editing': 'available' if not missing else 'unsupported_frontend',
                         'B2_shared_buffer_persistent_edit': 'available' if callable(getattr(self.ctx, 'EditSharedBufferRange', None)) else 'unsupported_frontend',
                         'B2_analysis_state_restore': 'available' if callable(getattr(self.ctx, 'EditSharedBufferRange', None)) else 'unsupported_frontend',
-                        'B3_project_workspace': 'not_integrated',
-                        'B4_embedded_ai_mcp_host': 'not_integrated',
+                        'B3_project_workspace': 'available' if callable(getattr(self.ctx, 'ShaderWorkspaceCommand', None)) else 'unsupported_frontend',
+                        'B4_embedded_ai_mcp_host': 'codex_host_available' if codex else ('host_only' if host else 'unsupported_frontend'),
+                        'B4_frame_graph': 'available' if graph else 'unsupported_frontend',
                         'B5_engine_effect_reconstruction': 'not_integrated',
                         'B6_checkpoint': 'not_integrated',
                         'Metal_backend_acceptance': 'not_verified',

@@ -1801,6 +1801,48 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "after_eid": {
+          "default": 0,
+          "type": "integer"
+        },
+        "limit": {
+          "default": 64,
+          "type": "integer"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "rid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "window_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "window_id",
+        "session_id",
+        "revision"
+      ],
+      "type": "object"
+    },
+    "name": "get_frame_graph"
+  },
+  {
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "draw_contains": {
           "anyOf": [
             {

@@ -34,7 +34,7 @@ class WorkflowTests(unittest.TestCase):
         data = self.query(ctx)['data']
         self.assertTrue(data['event_editing']['capture_eligible'])
         self.assertFalse(data['event_editing']['enabled'])
-        self.assertEqual(data['workflow_adapters']['B3_project_workspace'], 'not_integrated')
+        self.assertEqual(data['workflow_adapters']['B3_project_workspace'], 'unsupported_frontend')
         ctx.Replay = lambda: SimpleNamespace(CurrentRemote=lambda: SimpleNamespace(IsConnected=lambda: True))
         self.assertFalse(self.query(ctx)['data']['event_editing']['capture_eligible'])
         ctx.Replay = lambda: SimpleNamespace(CurrentRemote=lambda: SimpleNamespace(IsConnected=lambda: False))
@@ -54,3 +54,17 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(calls, [(('get_workflow_capabilities', {}), {'window_id': 'window-a'})])
         with self.assertRaises(ValueError):
             functions['get_workflow_capabilities']('')
+
+    def test_b3_b4_discovery_uses_actual_frontend_surface_without_starting_models(self):
+        ctx=SimpleNamespace(IsCaptureLoaded=lambda:False)
+        for name in ('GetCaptureSessionID','EventEditRevision','Extensions','CurRootActions',
+                     'GetResources','GetResourceName','GetStructuredFile','GetAction',
+                     'CurEvent','CurSelectedEvent','Replay','ShaderWorkspaceCommand'):
+            setattr(ctx,name,lambda:None)
+        ctx.Config=lambda:SimpleNamespace(AI_CodexExecutable='')
+        adapters=self.query(ctx)['data']['workflow_adapters']
+        self.assertEqual(adapters['B3_project_workspace'],'available')
+        self.assertEqual(adapters['B4_frame_graph'],'available')
+        self.assertEqual(adapters['B4_embedded_ai_mcp_host'],'codex_host_available')
+        ctx.Config=lambda:SimpleNamespace()
+        self.assertEqual(self.query(ctx)['data']['workflow_adapters']['B4_embedded_ai_mcp_host'],'host_only')

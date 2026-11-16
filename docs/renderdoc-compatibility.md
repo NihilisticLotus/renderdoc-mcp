@@ -231,3 +231,16 @@ StarRail双架构和Control x64的双基线/事件编辑/FP32/A-B-A。机器证�
 - 127 local MCP tests passed. Full producer evidence, executable/DLL/RDC hashes and owned PIDs:
   main repository `docs/diagnostics/fork-sync-b3-stage4-20261116.md/json`.
 - Source bridge only. No installed bridge or `C:/RenderDocCustom` deployment, no unrelated process closure.
+
+
+## 2026-11-16 B4.3 捕获帧流程事实图
+
+新增 `get_frame_graph(session_id, revision, window_id, after_eid=0, limit=64, rid=None)`，原77工具完整输入descriptor不变，现78工具。schema SHA256 bfecff4cf59e23f7bdd4daf66c6645f5ee12d3fdb1810d4c1710977a860fcd38。
+
+FrameGraphService在原UI/Replay队列只读采集CurRootActions/GetResources/GetUsage，核对capture UUID/revision和selected/effective EID；不选择事件、不申请GPU输出、不另建undo。分页按EID，capture_order与父marker独立，避免D3D12合成marker大EID漏页。同事件用途不拆页，原枚举保留，不推断GPU依赖。
+
+主GUI增加FrameGraph停靠面板，AIWorkspace::Analyse复用同Host任务回执；无CLI/DLL/helper/绑定/路径/安装布局改动。B3/B4 capability按实际ShaderWorkspaceCommand等接口报告；不支持前端明确报告unsupported。
+
+本地164单测、双架构Development/GUI各32例2002断言/Python一致；四组D3D11/12 GUI PID67844/61360/61676/32696，通过新runtime/源bridge共470+4检查，另PID34236能力检查120+1。覆盖双基线、分页/用途、full/live编辑后分析、FP32与统一undo A/B/A、切换关闭陈旧拒绝。详细产物/RDC/bridge/SHA/截图见主仓docs/diagnostics/fork-sync-b4-stage3-frame-graph-20261116.json。
+
+未部署安装bridge或C:/RenderDocCustom；保留既有egg-info修改。未验证其他GPU API/Mac/Linux，也不声称捕获usage反映修改Shader的动态访问。API/ACP、RT圈选与任务调查恢复继续。
