@@ -33,3 +33,30 @@ def invoke_replay_checked(ctx, callback):
     ctx.Replay().BlockInvoke(invoke)
     if failure:
         raise failure[0]
+
+
+def invoke_bundle_replay(ctx, params, callback):
+    """Opt-in capture-bound readback with one UI/replay scope."""
+    expected = params.get("capture_guard")
+    if expected is None:
+        ctx.Replay().BlockInvoke(callback)
+        return
+
+    from .capture import CaptureStatusService
+
+    def on_ui():
+        if not ctx.IsCaptureLoaded() or expected != {
+            "session_id": ctx.GetCaptureSessionID(), "edit_revision": ctx.EventEditRevision()
+        }:
+            raise ValueError("Capture session or edit revision changed before bundle readback")
+        selected_event = ctx.CurEvent()
+
+        def scoped(controller):
+            try:
+                callback(controller)
+            finally:
+                controller.SetFrameEvent(selected_event, True)
+
+        invoke_replay_checked(ctx, scoped)
+
+    CaptureStatusService(ctx)._invoke_on_ui_thread(on_ui, 120.0)

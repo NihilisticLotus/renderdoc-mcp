@@ -98,7 +98,11 @@ class PostVSExportServiceMixin:
                     json.dump(_finite_json(manifest), stream, indent=2, ensure_ascii=False, allow_nan=False)
                     stream.write("\n")
 
-        self.ctx.Replay().BlockInvoke(collect)
+        if "capture_guard" in params:
+            from .base import invoke_bundle_replay
+            invoke_bundle_replay(self.ctx, params, collect)
+        else:
+            self.ctx.Replay().BlockInvoke(collect)
         result.update({"path": path, "manifest": os.path.join(path, "manifest.json"),
                        "instances_exported": len(manifest["instances"]), "buffers": len(manifest["buffers"])})
         return {"ok": result["complete"], "mode": "summary", "data": result,

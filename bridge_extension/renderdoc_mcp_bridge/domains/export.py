@@ -242,7 +242,11 @@ class ExportServiceMixin:
             )
             result.update(saved)
 
-        self.ctx.Replay().BlockInvoke(collect)
+        if "capture_guard" in params:
+            from .base import invoke_bundle_replay
+            invoke_bundle_replay(self.ctx, params, collect)
+        else:
+            self.ctx.Replay().BlockInvoke(collect)
 
         return {
             "ok": result["path"] is not None,

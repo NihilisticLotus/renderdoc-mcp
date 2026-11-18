@@ -293,3 +293,9 @@ Windows使用系统WinHTTP TLS和证书校验，不要求升级Qt或安装旧Ope
 本地170单测和79工具实时schema验证通过；双架构Development GUI各41/2148和Python一致。原生ACP的自有进程夹具与真实模型Codex分开记录，详见主仓fork-sync-b4-stage2-acp-20261116.md/json。第三方ACP产品/远端账号、ACP v2、非Windows和本轮游戏帧未验证，不宣称OS沙箱。
 
 仅本兼容文档变化，无MCP运行时/schema更新；五个egg-info既有修改保留。不部署C:/RenderDocCustom、不更新已安装bridge，B5/B6/Metal范围保留。
+
+## 2026-11-18 B5 多 UV 源数据
+
+`export_scene_bundle` 可按 draw 启用 `vertex_streams`。在 GUI 队列核对 UUID 和编辑 revision，再通过既有回放队列读取原始顶点和 UV，临时事件回放在读回结束时恢复。输出仍包含既有 OBJ，新 sidecar 包含原索引和语义。旧桥接未返回 sidecar 时，服务端明确将该批标为不完整。已验收四组 D3D11/D3D12 与 x64/x86 组合，恢复选中邻居及其输出。UE 5.1 重新打开保存的 StaticMesh 后读回两套 UV 并核对三角形角点对应。
+
+170 项本地单测和 79 项输入 schema 通过。新桥接没有更改 DLL、CLI、公开 SWIG 类型、工具名或已有参数结构。运行日志及资产 SHA256 详见主仓 `docs/diagnostics/fork-sync-b5-vertex-streams-20261118.md`。Unity 编辑器尚待验收。未部署。

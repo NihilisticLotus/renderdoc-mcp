@@ -117,7 +117,7 @@ class Bundle:
                 "reconstruction_complete": payload.get("reconstruction_complete"), "unresolved": payload.get("unresolved", [])}
 
 
-def export_textures(bundle, items):
+def export_textures(bundle, items, capture_guard=None):
     if len(items) > 256:
         raise ValueError("At most 256 textures per bundle")
     out = []
@@ -128,8 +128,9 @@ def export_textures(bundle, items):
         if not item.get("rid") or "eid" not in item:
             raise ValueError("Each texture requires rid and eid (resource contents vary per event)")
         name = "texture_{:04d}.{}".format(index, fmt)
+        options = {"capture_guard": capture_guard} if capture_guard is not None else {}
         result = bundle.call("debug_save_texture", rid=str(item["rid"]), eid=int(item["eid"]),
-                             dest=str(bundle.path / name), format=fmt, type_cast=item.get("type_cast"), overwrite=False)
+                             dest=str(bundle.path / name), format=fmt, type_cast=item.get("type_cast"), overwrite=False, **options)
         out.append({"file": name if result.get("ok") else None, "request": item,
                     "result": result, "semantic_status": "caller_supplied" if item.get("role") else "unassigned"})
     return out
@@ -208,20 +209,39 @@ def scene_bundle(live, dest, draws, texture_items, camera, source_to_gltf, windo
         raise ValueError("delivery must be data, obj, gltf or fbx (DCC export job)")
     basis = matrix(source_to_gltf) if source_to_gltf is not None else None
     b = Bundle(live, dest, window_id, expected_capture)
+    capture_guard = None
+    if any(draw.get("vertex_streams") is True for draw in draws):
+        if not b.identity[0] or b.identity[1] is None:
+            raise ValueError("Vertex streams require a capture session and edit revision")
+        capture_guard = dict(session_id=b.identity[0], edit_revision=b.identity[1])
     gltf, objects, unresolved = Gltf(), [], []
     for index, draw in enumerate(draws):
         eid = int(draw["eid"])
         filename = "mesh_{:04d}_eid_{}.obj".format(index, eid)
-        result = b.call("export_mesh", eid=eid, dest=str(b.path / filename), overwrite=False)
+        mesh_options = {}
+        if capture_guard is not None:
+            mesh_options["capture_guard"] = capture_guard
+            if draw.get("vertex_streams") is True:
+                mesh_options["vertex_streams"] = True
+        result = b.call("export_mesh", eid=eid, dest=str(b.path / filename), overwrite=False, **mesh_options)
         entry = {"eid": eid, "file": filename if result.get("ok") else None, "result": result,
                  "instances": draw.get("instances", []), "material_bindings": draw.get("material_bindings", [])}
         objects.append(entry)
-        entry["pipeline"] = b.call("inspect_pipeline_state", eid=eid)
+        guard_options = {"capture_guard": capture_guard} if capture_guard is not None else {}
+        entry["pipeline"] = b.call("inspect_pipeline_state", eid=eid, **guard_options)
         if draw.get("export_postvs"):
             entry["postvs"] = b.call("export_postvs", eid=eid, dest=str(b.path / ("postvs_"+str(index))),
-                                    first_instance=int(draw.get("first_instance", 0)), instance_count=int(draw.get("instance_count", 1)))
+                                    first_instance=int(draw.get("first_instance", 0)), instance_count=int(draw.get("instance_count", 1)),
+                                    **guard_options)
         if not result.get("ok"):
             continue
+        if mesh_options.get("vertex_streams"):
+            vertex_name = Path(filename).with_suffix(".vertices.json").name
+            vertex_path = (result.get("data") or {}).get("vertex_data")
+            if not vertex_path or Path(vertex_path).resolve() != b.path / vertex_name or not (b.path / vertex_name).is_file():
+                b.errors.append({"eid": eid, "error": "Bridge did not provide the requested vertex streams"})
+                continue
+            entry["vertex_data"] = vertex_name
         # DCCs can build geometry directly without invoking an OBJ/glTF importer.
         geometry = {"positions": [], "normals": [], "uv0": [], "faces": [],
                     "index_base": 0, "space": "VS input; deformation/object transform not baked"}
@@ -262,7 +282,7 @@ def scene_bundle(live, dest, draws, texture_items, camera, source_to_gltf, windo
         gltf.save(b.path / "scene.gltf")
     elif basis is None:
         unresolved.append({"reason": "source_to_gltf axis/unit mapping unspecified; OBJ and manifest retain source coordinates"})
-    exported = export_textures(b, texture_items)
+    exported = export_textures(b, texture_items, capture_guard)
     write_json(b.path / "DCC_HANDOFF.json", {"schema_version": 1, "objects": objects, "camera": cam, "textures": exported,
         "requested_delivery": delivery, "fbx_status": "requires_downstream_DCC_export" if delivery == "fbx" else "not_requested",
         "source_to_gltf": basis, "unresolved": unresolved,
@@ -401,7 +421,7 @@ def register_asset_tools(app, live):
     def export_scene_bundle(dest: str, draws: list[dict[str, Any]], window_id: str, expected_capture: str,
                             textures: list[dict[str, Any]] | None = None, camera: dict[str, Any] | None = None,
                             source_to_gltf: list[float] | None = None, delivery: str = "data") -> Any:
-        """Export portable geometry JSON, OBJ, optional placed glTF, textures and DCC_HANDOFF.json for direct reconstruction via DCC MCP. delivery=data/obj/gltf/fbx; FBX is an explicit downstream DCC export job, not a fabricated local file. Each draw: eid, optional instances [{matrix:16 row-ordered values,evidence:{...}}], material_bindings, export_postvs. Camera: view,projection,evidence,coordinate_system. source_to_gltf maps source-world axes/units to RH Y-up meters. Missing transforms/camera stay unresolved. Fresh destination required."""
+        """Export portable geometry JSON, OBJ, optional placed glTF, textures and DCC_HANDOFF.json for direct reconstruction via DCC MCP. delivery=data/obj/gltf/fbx; FBX is an explicit downstream DCC export job, not a fabricated local file. Each draw: eid, optional instances [{matrix:16 row-ordered values,evidence:{...}}], material_bindings, export_postvs, vertex_streams (opt-in VS inputs with all supported indexed UV channels). Camera: view,projection,evidence,coordinate_system. source_to_gltf maps source-world axes/units to RH Y-up meters. Missing transforms/camera stay unresolved. Fresh destination required."""
         return scene_bundle(live, dest, draws, textures or [], camera, source_to_gltf, window_id, expected_capture, delivery)
 
     @app.tool()

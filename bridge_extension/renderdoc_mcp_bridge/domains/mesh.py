@@ -1,6 +1,8 @@
 """Mesh inspection and export services."""
 
+import json
 import os
+import re
 import struct
 
 import renderdoc as rd
@@ -319,13 +321,21 @@ class MeshServiceMixin:
             raise _MeshExportError("invalid_vertex_index", "Index plus baseVertex is negative")
         return indices, True
 
-    def _read_mesh_attributes(self, controller, action, pipe, indices):
+    def _read_mesh_attributes(self, controller, action, pipe, indices, all_uvs=False):
         selected = {}
         getter = getattr(pipe, "GetVertexInputs", None)
         for attr in (getter() if callable(getter) else []) or []:
             if bool(getattr(attr, "perInstance", False)):
                 continue
-            kind = self._semantic_kind(getattr(attr, "name", ""))
+            name = getattr(attr, "name", "")
+            kind = self._semantic_kind(name)
+            if all_uvs and kind == "texcoord":
+                channel = re.fullmatch(r"(?:TEXCOORD|UV)([0-9]*)", name.upper())
+                if channel is None:
+                    continue
+                kind = "texcoord" + str(int(channel.group(1) or "0"))
+                if kind in selected:
+                    raise _MeshExportError("ambiguous_uv", "Duplicate UV channel: " + name)
             if kind is not None and kind not in selected:
                 selected[kind] = attr
         if "position" not in selected:
@@ -356,7 +366,7 @@ class MeshServiceMixin:
                 stride = int(getattr(vb, "byteStride", 0) or 0)
                 attr_offset = int(getattr(attr, "byteOffset", 0) or 0)
                 value_size = self._vertex_format_size(attr.format)
-                required_components = {"position": 3, "normal": 3, "texcoord": 2}[kind]
+                required_components = 2 if kind.startswith("texcoord") else 3
                 if int(getattr(attr.format, "compCount", 0) or 0) < required_components:
                     raise _MeshExportError(
                         "unsupported_vertex_format",
@@ -380,7 +390,13 @@ class MeshServiceMixin:
                     raise
                 warnings.append("Skipped {}: {}".format(getattr(attr, "name", kind), str(exc)))
 
+        if all_uvs and len(unique_indices) * sum(
+            spec["attr"].format.compCount for spec in specs.values()
+        ) > 4000000:
+            raise _MeshExportError("vertex_stream_too_large", "Decoded streams exceed four million components")
+
         slot_data = {}
+        read_total = 0
         for slot in set(spec["slot"] for spec in specs.values()):
             slot_specs = [spec for spec in specs.values() if spec["slot"] == slot]
             first = slot_specs[0]
@@ -391,6 +407,9 @@ class MeshServiceMixin:
             read_length = (max_index - min_index) * stride + max_value_end
             if read_offset < 0:
                 raise _MeshExportError("invalid_vertex_offset", "Vertex buffer read offset is negative")
+            read_total += read_length
+            if all_uvs and read_total > 64 * 1024 * 1024:
+                raise _MeshExportError("vertex_span_too_large", "Total vertex buffer spans exceed 64 MiB")
             raw = self._mesh_bytes(
                 controller.GetBufferData(first["rid"], read_offset, read_length)
             )
@@ -458,6 +477,9 @@ class MeshServiceMixin:
                 obj.write("f {}\n".format(" ".join(face)))
 
     def export_mesh(self, params):
+        all_uvs = params.get("vertex_streams") is True
+        if all_uvs and "capture_guard" not in params:
+            raise ValueError("Vertex streams require a capture session and edit revision")
         if not self.ctx.IsCaptureLoaded():
             return self._no_capture()
 
@@ -512,13 +534,15 @@ class MeshServiceMixin:
                         "Only TriangleList topology is supported, got {}".format(topology or "Unknown"),
                     )
 
+                if all_uvs and not 3 <= action.numIndices <= 500000:
+                    raise _MeshExportError("unsupported_vertex_count", "Vertex streams require 3..500000 draw indices")
                 indices, indexed = self._read_mesh_indices(controller, action, pipe)
                 trailing = len(indices) % 3
                 warnings = []
                 if trailing:
                     warnings.append("Ignored {} trailing indices for TriangleList".format(trailing))
                 unique_indices, index_map, values, selected, attr_warnings = self._read_mesh_attributes(
-                    controller, action, pipe, indices
+                    controller, action, pipe, indices, all_uvs
                 )
                 warnings.extend(attr_warnings)
                 instances = int(getattr(action, "numInstances", 0) or 0)
@@ -529,6 +553,23 @@ class MeshServiceMixin:
                         )
                     )
 
+                vertex_path = None
+                if all_uvs:
+                    vertex_path = os.path.splitext(out_path)[0] + ".vertices.json"
+                    stream = dict(schema="rendertest-vsin/v1", eid=eid, stage="vsin",
+                                  topology=topology, draw_instances=instances,
+                                  first_instance=int(getattr(action, "instanceOffset", 0)),
+                                  vertex_indices=[i + int(action.vertexOffset) for i in unique_indices],
+                                  triangles=[index_map[i] - 1 for i in indices[:len(indices) - trailing]],
+                                  attributes={kind: dict(semantic=selected[kind].name, values=data)
+                                              for kind, data in values.items()},
+                                  warnings=warnings, **params["capture_guard"])
+                    payload = json.dumps(stream, allow_nan=False, separators=(",", ":"))
+                    with open(vertex_path, "x", encoding="utf-8") as vertex_file:
+                        vertex_file.write(payload)
+                    if "texcoord0" in values:
+                        values["texcoord"] = values["texcoord0"]
+                        selected["texcoord"] = selected["texcoord0"]
                 self._write_obj(out_path, eid, indices, index_map, values)
                 result["data"] = {
                     "eid": eid,
@@ -547,13 +588,19 @@ class MeshServiceMixin:
                     ],
                     "warnings": warnings,
                 }
+                if vertex_path is not None:
+                    result["data"]["vertex_data"] = vertex_path
             except _MeshExportError as exc:
                 result["error"] = str(exc)
                 result["error_code"] = exc.code
             except Exception as exc:
                 result["error"] = str(exc)
 
-        self.ctx.Replay().BlockInvoke(collect)
+        if "capture_guard" in params:
+            from .base import invoke_bundle_replay
+            invoke_bundle_replay(self.ctx, params, collect)
+        else:
+            self.ctx.Replay().BlockInvoke(collect)
 
         return {
             "ok": result["data"] is not None,

@@ -251,7 +251,11 @@ class PipelineStateServiceMixin(ShaderSupportMixin):
             except Exception as exc:
                 self._warn_swallow("pipeline.inspect.output_merger", exc)
 
-        self.ctx.Replay().BlockInvoke(collect)
+        if "capture_guard" in params:
+            from .base import invoke_bundle_replay
+            invoke_bundle_replay(self.ctx, params, collect)
+        else:
+            self.ctx.Replay().BlockInvoke(collect)
 
         return {
             "ok": True,
