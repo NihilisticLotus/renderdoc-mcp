@@ -145,7 +145,7 @@ Heavy text fields should support:
 
 When fixed-function state appears inside draw packets, treat it as API-limited:
 
-- current `blend` / `depth` / `rast` extraction is sourced from D3D11 pipeline state
+- `blend` / `depth` / `rast` are extracted from the native D3D11 or D3D12 pipeline state. Check `source_api` and `limited_to_source_api` before using the values.
 - responses should carry the source API and a flag when the current capture API is outside that supported path
 - callers must not assume those fixed-function fields are equally populated on Vulkan or D3D12 captures
 

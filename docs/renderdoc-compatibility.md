@@ -299,3 +299,9 @@ Windows使用系统WinHTTP TLS和证书校验，不要求升级Qt或安装旧Ope
 `export_scene_bundle` 可按 draw 启用 `vertex_streams`。在 GUI 队列核对 UUID 和编辑 revision，再通过既有回放队列读取原始顶点和 UV，临时事件回放在读回结束时恢复。输出仍包含既有 OBJ，新 sidecar 包含原索引和语义。旧桥接未返回 sidecar 时，服务端明确将该批标为不完整。已验收四组 D3D11/D3D12 与 x64/x86 组合，恢复选中邻居及其输出。UE 5.1 重新打开保存的 StaticMesh 后读回两套 UV 并核对三角形角点对应。
 
 170 项本地单测和 79 项输入 schema 通过。新桥接没有更改 DLL、CLI、公开 SWIG 类型、工具名或已有参数结构。运行日志及资产 SHA256 详见主仓 `docs/diagnostics/fork-sync-b5-vertex-streams-20261118.md`。Unity 编辑器尚待验收。未部署。
+
+## 2026-11-18 B5 D3D12 绘制状态
+
+`get_draw_packet` 通过同一回放队列读取 D3D12 的混合、深度和光栅状态，返回原有状态字段。D3D11 继续读取原生 D3D11 状态。不支持的 API 保留能力标记。工具名、参数、GUI/CLI/DLL 布局、Python/SWIG 和桥接发现保持现有约定。
+
+Win32 Development `qrendertest.exe` 使用源桥接，窗口 `52268-65fa65b0` 和 `58976-d783855e` 分别打开自有 D3D12 基线与改参捕获。实际加载的 `Win32/Development/rendertest.dll` SHA256 为 `4ee44ca95ff6c6dcd0387c1ae8bbf9fcd2ea04761bcc17b28419b0a66becfecb`。两次在 EID 27 返回原生全通道写入状态，分别通过 27 项证据检查。stdio 的 79 个工具输入 schema SHA256 仍为 `08baa7a1f619c678a4c9a189300b701c6c420aa48cdf313155b7c6156500e730`，170 个本地测试通过。本轮行为验收使用 Windows 本地回放。未部署。

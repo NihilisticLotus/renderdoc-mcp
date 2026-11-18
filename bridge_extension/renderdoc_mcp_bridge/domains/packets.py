@@ -680,9 +680,10 @@ class PacketServiceMixin:
         return packet
 
     def _fixed_function_state(self, eid):
+        api = self.ctx.APIProps().pipelineType
         state = {
-            "api": str(self.ctx.APIProps().pipelineType),
-            "source_api": "D3D11",
+            "api": str(api),
+            "source_api": "D3D12" if api == rd.GraphicsAPI.D3D12 else "D3D11",
             "limited_to_source_api": False,
             "blend": None,
             "depth": None,
@@ -691,21 +692,22 @@ class PacketServiceMixin:
 
         def collect(controller):
             controller.SetFrameEvent(eid, True)
-            if "D3D11" not in state["api"]:
+            if api not in (rd.GraphicsAPI.D3D11, rd.GraphicsAPI.D3D12):
                 state["limited_to_source_api"] = True
                 return
             try:
-                d3d11 = controller.GetD3D11PipelineState()
+                pipeline = (controller.GetD3D12PipelineState() if api == rd.GraphicsAPI.D3D12
+                            else controller.GetD3D11PipelineState())
             except Exception as exc:
                 state["limited_to_source_api"] = True
-                self._warn_swallow("packets.fixed_function_state.get_d3d11_pipeline_state", exc)
+                self._warn_swallow("packets.fixed_function_state.get_pipeline_state", exc)
                 return
-            if d3d11 is None:
+            if pipeline is None:
                 state["limited_to_source_api"] = True
                 return
 
             try:
-                om = d3d11.outputMerger
+                om = pipeline.outputMerger
                 bs = om.blendState
                 targets = []
                 try:
@@ -741,7 +743,7 @@ class PacketServiceMixin:
                 self._warn_swallow("packets.fixed_function_state.blend_state", exc)
 
             try:
-                om = d3d11.outputMerger
+                om = pipeline.outputMerger
                 ds = om.depthStencilState
                 state["depth"] = {
                     "enabled": bool(ds.depthEnable),
@@ -752,7 +754,7 @@ class PacketServiceMixin:
                 self._warn_swallow("packets.fixed_function_state.depth_state", exc)
 
             try:
-                rast = d3d11.rasterizer.state
+                rast = pipeline.rasterizer.state
                 state["rast"] = {
                     "fill": str(rast.fillMode).split(".")[-1],
                     "cull": str(rast.cullMode).split(".")[-1],
