@@ -25,6 +25,28 @@ class Bridge:
 
 
 class AssetTests(unittest.TestCase):
+    def test_old_vertex_bridge_cannot_confirm_requested_tangents(self):
+        class VertexBridge(Bridge):
+            def require(self, method, params):
+                response = super().require(method, params)
+                if method == 'get_capture_status':
+                    response['data'].update(session_id='s', edit_revision=2)
+                elif method == 'export_mesh':
+                    sidecar = Path(params['dest']).with_suffix('.vertices.json')
+                    sidecar.write_text('{}')
+                    response['data']['vertex_data'] = str(sidecar)
+                return response
+
+        with tempfile.TemporaryDirectory() as root:
+            bridge = VertexBridge()
+            result = scene_bundle(bridge, Path(root)/'bundle', [{'eid': 4, 'tangent_basis': True}],
+                                  [], None, None, 'w', 'capture.rdc')
+            self.assertFalse(result['ok'])
+            request, = [p for name, p in bridge.calls if name == 'export_mesh']
+            self.assertTrue(request['vertex_streams'] and request['tangent_basis'])
+            self.assertEqual(request['capture_guard'], {'session_id': 's', 'edit_revision': 2})
+            self.assertIn('requested tangent basis', Path(result['path']).read_text())
+
     def test_camera_inverse_and_reject_combined_matrix(self):
         view = IDENTITY.copy()
         view[3], view[7], view[11] = -2, -3, -4

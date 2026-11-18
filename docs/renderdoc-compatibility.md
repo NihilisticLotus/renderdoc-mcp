@@ -305,3 +305,5 @@ Windows使用系统WinHTTP TLS和证书校验，不要求升级Qt或安装旧Ope
 `get_draw_packet` 通过同一回放队列读取 D3D12 的混合、深度和光栅状态，返回原有状态字段。D3D11 继续读取原生 D3D11 状态。不支持的 API 保留能力标记。工具名、参数、GUI/CLI/DLL 布局、Python/SWIG 和桥接发现保持现有约定。
 
 Win32 Development `qrendertest.exe` 使用源桥接，窗口 `52268-65fa65b0` 和 `58976-d783855e` 分别打开自有 D3D12 基线与改参捕获。实际加载的 `Win32/Development/rendertest.dll` SHA256 为 `4ee44ca95ff6c6dcd0387c1ae8bbf9fcd2ea04761bcc17b28419b0a66becfecb`。两次在 EID 27 返回原生全通道写入状态，分别通过 27 项证据检查。stdio 的 79 个工具输入 schema SHA256 仍为 `08baa7a1f619c678a4c9a189300b701c6c420aa48cdf313155b7c6156500e730`，170 个本地测试通过。本轮行为验收使用 Windows 本地回放。未部署。
+
+`export_scene_bundle` 的 draw 可指定 `tangent_basis: true`，会启用受捕获 UUID 和编辑 revision 约束的顶点流，并要求可读取的逐顶点 NORMAL0/TANGENT0。含四分量切线的顶点 sidecar 供 Unity／UE 工程生成器使用。手性的正负号和角点索引随源数据保存。未支持此选项的旧桥接会产生不完整回执。OBJ 仍使用本身支持的顶点数据。

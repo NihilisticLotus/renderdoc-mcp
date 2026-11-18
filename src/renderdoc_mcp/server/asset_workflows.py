@@ -210,7 +210,7 @@ def scene_bundle(live, dest, draws, texture_items, camera, source_to_gltf, windo
     basis = matrix(source_to_gltf) if source_to_gltf is not None else None
     b = Bundle(live, dest, window_id, expected_capture)
     capture_guard = None
-    if any(draw.get("vertex_streams") is True for draw in draws):
+    if any(draw.get("vertex_streams") is True or draw.get("tangent_basis") is True for draw in draws):
         if not b.identity[0] or b.identity[1] is None:
             raise ValueError("Vertex streams require a capture session and edit revision")
         capture_guard = dict(session_id=b.identity[0], edit_revision=b.identity[1])
@@ -221,8 +221,10 @@ def scene_bundle(live, dest, draws, texture_items, camera, source_to_gltf, windo
         mesh_options = {}
         if capture_guard is not None:
             mesh_options["capture_guard"] = capture_guard
-            if draw.get("vertex_streams") is True:
+            if draw.get("vertex_streams") is True or draw.get("tangent_basis") is True:
                 mesh_options["vertex_streams"] = True
+            if draw.get("tangent_basis") is True:
+                mesh_options["tangent_basis"] = True
         result = b.call("export_mesh", eid=eid, dest=str(b.path / filename), overwrite=False, **mesh_options)
         entry = {"eid": eid, "file": filename if result.get("ok") else None, "result": result,
                  "instances": draw.get("instances", []), "material_bindings": draw.get("material_bindings", [])}
@@ -242,6 +244,9 @@ def scene_bundle(live, dest, draws, texture_items, camera, source_to_gltf, windo
                 b.errors.append({"eid": eid, "error": "Bridge did not provide the requested vertex streams"})
                 continue
             entry["vertex_data"] = vertex_name
+            if mesh_options.get("tangent_basis") and result["data"].get("tangent_basis") is not True:
+                b.errors.append({"eid": eid, "error": "Bridge did not export the requested tangent basis"})
+                continue
         # DCCs can build geometry directly without invoking an OBJ/glTF importer.
         geometry = {"positions": [], "normals": [], "uv0": [], "faces": [],
                     "index_base": 0, "space": "VS input; deformation/object transform not baked"}
@@ -421,7 +426,7 @@ def register_asset_tools(app, live):
     def export_scene_bundle(dest: str, draws: list[dict[str, Any]], window_id: str, expected_capture: str,
                             textures: list[dict[str, Any]] | None = None, camera: dict[str, Any] | None = None,
                             source_to_gltf: list[float] | None = None, delivery: str = "data") -> Any:
-        """Export portable geometry JSON, OBJ, optional placed glTF, textures and DCC_HANDOFF.json for direct reconstruction via DCC MCP. delivery=data/obj/gltf/fbx; FBX is an explicit downstream DCC export job, not a fabricated local file. Each draw: eid, optional instances [{matrix:16 row-ordered values,evidence:{...}}], material_bindings, export_postvs, vertex_streams (opt-in VS inputs with all supported indexed UV channels). Camera: view,projection,evidence,coordinate_system. source_to_gltf maps source-world axes/units to RH Y-up meters. Missing transforms/camera stay unresolved. Fresh destination required."""
+        """Export portable geometry JSON, OBJ, optional placed glTF, textures and DCC_HANDOFF.json for direct reconstruction via DCC MCP. delivery=data/obj/gltf/fbx; FBX is an explicit downstream DCC export job, not a fabricated local file. Each draw: eid, optional instances [{matrix:16 row-ordered values,evidence:{...}}], material_bindings, export_postvs, vertex_streams (opt-in VS inputs with all supported indexed UV channels), tangent_basis (opt-in per-vertex NORMAL0/TANGENT0 in the vertex sidecar; implies vertex_streams). Camera: view,projection,evidence,coordinate_system. source_to_gltf maps source-world axes/units to RH Y-up meters. Missing transforms/camera stay unresolved. Fresh destination required."""
         return scene_bundle(live, dest, draws, textures or [], camera, source_to_gltf, window_id, expected_capture, delivery)
 
     @app.tool()

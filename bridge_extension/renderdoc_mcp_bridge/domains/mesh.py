@@ -321,7 +321,7 @@ class MeshServiceMixin:
             raise _MeshExportError("invalid_vertex_index", "Index plus baseVertex is negative")
         return indices, True
 
-    def _read_mesh_attributes(self, controller, action, pipe, indices, all_uvs=False):
+    def _read_mesh_attributes(self, controller, action, pipe, indices, all_uvs=False, tangent_basis=False):
         selected = {}
         getter = getattr(pipe, "GetVertexInputs", None)
         for attr in (getter() if callable(getter) else []) or []:
@@ -329,6 +329,12 @@ class MeshServiceMixin:
                 continue
             name = getattr(attr, "name", "")
             kind = self._semantic_kind(name)
+            if tangent_basis and kind == "normal" and name.upper() not in ("NORMAL", "NORMAL0"):
+                continue
+            if tangent_basis and name.upper() in ("TANGENT", "TANGENT0"):
+                kind = "tangent"
+            if tangent_basis and kind in ("normal", "tangent") and kind in selected:
+                raise _MeshExportError("ambiguous_tangent_basis", "Duplicate basis semantic: " + name)
             if all_uvs and kind == "texcoord":
                 channel = re.fullmatch(r"(?:TEXCOORD|UV)([0-9]*)", name.upper())
                 if channel is None:
@@ -478,6 +484,9 @@ class MeshServiceMixin:
 
     def export_mesh(self, params):
         all_uvs = params.get("vertex_streams") is True
+        tangent_basis = params.get("tangent_basis") is True
+        if tangent_basis and not all_uvs:
+            raise ValueError("The tangent basis requires capture-bound vertex streams")
         if all_uvs and "capture_guard" not in params:
             raise ValueError("Vertex streams require a capture session and edit revision")
         if not self.ctx.IsCaptureLoaded():
@@ -542,8 +551,12 @@ class MeshServiceMixin:
                 if trailing:
                     warnings.append("Ignored {} trailing indices for TriangleList".format(trailing))
                 unique_indices, index_map, values, selected, attr_warnings = self._read_mesh_attributes(
-                    controller, action, pipe, indices, all_uvs
+                    controller, action, pipe, indices, all_uvs, tangent_basis
                 )
+                if tangent_basis and not {"normal", "tangent"} <= values.keys():
+                    raise _MeshExportError("missing_tangent_basis",
+                                           "Expected readable per-vertex NORMAL0 and TANGENT0: " +
+                                           ", ".join(attr_warnings))
                 warnings.extend(attr_warnings)
                 instances = int(getattr(action, "numInstances", 0) or 0)
                 if instances > 1:
@@ -590,6 +603,8 @@ class MeshServiceMixin:
                 }
                 if vertex_path is not None:
                     result["data"]["vertex_data"] = vertex_path
+                    if tangent_basis:
+                        result["data"]["tangent_basis"] = True
             except _MeshExportError as exc:
                 result["error"] = str(exc)
                 result["error_code"] = exc.code
