@@ -292,6 +292,13 @@ class MeshServiceMixin:
         except Exception:
             return "Indexed" in str(getattr(action, "flags", ""))
 
+    @staticmethod
+    def _view_read_offset(binding, relative, length):
+        size = getattr(binding, "byteSize", None)
+        if relative < 0 or (size is not None and relative + length > size):
+            raise _MeshExportError("outside_buffer_view", "Draw data extends outside the bound buffer view")
+        return int(getattr(binding, "byteOffset", 0) or 0) + relative
+
     def _read_mesh_indices(self, controller, action, pipe):
         count = int(getattr(action, "numIndices", 0) or 0)
         if count <= 0:
@@ -307,7 +314,7 @@ class MeshServiceMixin:
             raise _MeshExportError("invalid_index_buffer", "Indexed action has no supported index buffer")
 
         index_offset = int(getattr(action, "indexOffset", 0) or 0)
-        byte_offset = int(getattr(ib, "byteOffset", 0) or 0) + index_offset * stride
+        byte_offset = self._view_read_offset(ib, index_offset * stride, count * stride)
         raw = self._mesh_bytes(controller.GetBufferData(rid, byte_offset, count * stride))
         if len(raw) < count * stride:
             raise _MeshExportError("buffer_too_short", "Index buffer data is shorter than expected")
@@ -407,10 +414,9 @@ class MeshServiceMixin:
             slot_specs = [spec for spec in specs.values() if spec["slot"] == slot]
             first = slot_specs[0]
             stride = first["stride"]
-            vb_offset = int(getattr(first["vb"], "byteOffset", 0) or 0)
-            read_offset = vb_offset + (vertex_offset + min_index) * stride
             max_value_end = max(spec["attr_offset"] + spec["value_size"] for spec in slot_specs)
             read_length = (max_index - min_index) * stride + max_value_end
+            read_offset = self._view_read_offset(first["vb"], (vertex_offset + min_index) * stride, read_length)
             if read_offset < 0:
                 raise _MeshExportError("invalid_vertex_offset", "Vertex buffer read offset is negative")
             read_total += read_length

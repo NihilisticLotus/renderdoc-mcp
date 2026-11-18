@@ -153,6 +153,25 @@ def _write_vertex(buffer, offset, position, normal=None, texcoord=None):
 
 
 class MeshExportTests(unittest.TestCase):
+    def test_reads_stay_within_bound_views_of_larger_resources(self):
+        # Nonzero view and draw offsets. Both backing resources extend past their views.
+        ib = _BufferBinding("ib", 4, 2)
+        vb = _BufferBinding("vb", 8, 12)
+        pipe = _Pipe([_Attr("POSITION", 0, _Format("Float", 3, 4))], [vb], ib)
+        buffers = {"ib": bytes(6) + struct.pack("<3H", 0, 1, 2) + bytes(6), "vb": bytes(80)}
+        service = _Service(_Context(_Action(3, indexed=True, index_offset=1, base_vertex=1),
+                                    _Controller(pipe, buffers)))
+        for ib_size, vb_size, valid in ((8, 48, True), (7, 48, False), (8, 47, False),
+                                       (0, 48, False), (8, 0, False), (2**64-1, 2**64-1, True)):
+            with self.subTest(ib_size=ib_size, vb_size=vb_size), tempfile.TemporaryDirectory() as tmp:
+                ib.byteSize, vb.byteSize = ib_size, vb_size
+                dest = Path(tmp) / "mesh.obj"
+                result = service.export_mesh({"eid": 42, "dest": str(dest)})
+                self.assertEqual(result["ok"], valid)
+                self.assertEqual(dest.exists(), valid)
+                if not valid:
+                    self.assertEqual(result["err"]["code"], "outside_buffer_view")
+
     def test_export_indexed_obj_applies_offsets_and_exports_common_attributes(self):
         vb_data = bytearray(176)
         _write_vertex(vb_data, 72, (1, 2, 3), (0, 0, 1), (0, 0))
