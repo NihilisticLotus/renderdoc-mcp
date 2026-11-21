@@ -1,10 +1,11 @@
 """Versioned shader-debug evidence; values retain exact bits, including NaN payloads."""
 import hashlib
-import json
 import math
 import os
 import struct
 import renderdoc as rd
+
+from .trace_writer import publish_trace
 
 
 def _variable(value):
@@ -100,11 +101,7 @@ class ShaderDebugServiceMixin:
 
         self.ctx.Replay().BlockInvoke(collect)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        temporary = path + ".tmp"
-        with open(temporary, "w", encoding="utf-8") as stream:
-            json.dump(payload, stream, allow_nan=False, ensure_ascii=False, separators=(",", ":"))
-            stream.write("\n")
-        os.replace(temporary, path)
+        publish_trace(path, payload, params.get("overwrite", False))
         return {"ok": payload["complete"], "mode": "summary",
                 "data": {"path": path, "eid": eid, "x": x, "y": y, "steps": len(payload["states"]), "complete": payload["complete"]},
                 "err": None if payload["complete"] else {"code": "incomplete_debug_trace", "msg": "; ".join(payload["errors"])},

@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from .trace_page import read_trace_page
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ROOT = REPO_ROOT.parent
@@ -165,11 +166,9 @@ def register_shader_tools(app, live):
         """Read a bounded window of saved debugger states. Optional variable substring filters changed variables. Preserves exact raw bits; Float32 views are not type interpretation."""
         if offset < 0 or not 1 <= limit <= 200:
             raise ValueError('offset>=0 and limit 1..200 required')
-        data = json.loads(Path(path).read_text(encoding='utf-8'))
-        states = data.get('states', [])
-        selected = states[offset:offset+limit]
+        data, total_steps, selected = read_trace_page(path, offset, limit)
         if variable:
             selected = [dict(s, changes=[c for c in s.get('changes', []) if any(variable in str(c.get(k, {}).get('name', '')) for k in ('before', 'after'))]) for s in selected]
         return {'stage': data.get('stage'), 'complete': data.get('complete'), 'errors': data.get('errors'),
-                'total_steps': len(states), 'offset': offset, 'next_offset': offset+len(selected),
-                'has_more': offset+len(selected)<len(states), 'states': selected}
+                'total_steps': total_steps, 'offset': offset, 'next_offset': offset+len(selected),
+                'has_more': offset+len(selected)<total_steps, 'states': selected}

@@ -59,6 +59,16 @@
 
 ## Shader 分析与调试
 
+新版轨迹在同一个 JSON 文件内保存状态字节偏移。用 `read_shader_debug_trace(path, offset, limit, variable)` 读新导出时只解析当前页，变量名筛选保留原有的步骤编号和空变化列表。索引和状态由同一临时文件原子发布。被请求记录的偏移或 CRC32 校验出错时，读取器尝试按普通 JSON 解析状态。旧文件仍可直接读取，重复分页大型旧文件时，可先从源码目录生成一份带索引的副本。
+
+```powershell
+py -3 bridge_extension/renderdoc_mcp_bridge/domains/trace_writer.py old-trace.json indexed-trace.json
+```
+
+目标文件须是新文件。转换时一次性载入旧 JSON。每步索引占 40 个文件字节，版本尾标和头部仅有固定量额外开销。导出阶段仍在内存中收集 debugger 状态，分页优化针对已保存轨迹的读取。
+
+2026-11-21 在 11 份真实 PS/VS/CS 轨迹上比较普通 JSON 和带索引副本，303 组分页与筛选结果一致。每份样本预热后交替计时各 30 次。849 步 CS 样本末 50 步的本地读取 P50 从 3.50 ms 降到 0.46 ms，P95 从 4.92 ms 降到 0.89 ms，Python 分配峰值从 3,167,240 降到 192,652 字节。该样本旧序列化和含索引的新序列化 P50 分别为 18.27 ms 和 10.11 ms，计时覆盖已有状态的本地写入。11 份文件相对旧写入器增大 0.59%–3.86%。可在开发环境用 `python scripts/benchmark_trace_pages.py <trace.json> [更多路径...]` 重测。另在隔离 x64 Development GUI 中从 D3D11 夹具现场导出，使用 fresh stdio MCP 逐步读回核验。真实样本覆盖 32–849 步，20 万步的内存规模测试使用合成轨迹。
+
 `export_shader_analysis_bundle` 保存 draw、反射、实际常量、完整分页源码/反汇编、原始字节码、Ruri 反编译结果/诊断；可指定 pixels 数组（x,y，可加 rid 导出 pixel history）。缺失源码不会伪造成 HLSL；反编译失败记录为部分成功，原始字节码与反汇编仍保留。
 
 `debug_shader_invocation` 对 PS 使用 {x,y}，VS 使用 {vertex,index,instance,view?}，CS 使用 {group:[x,y,z],thread:[x,y,z]}。dest 为新目录；导出完整状态变化、指令、调用栈和精确值位模式，达到 max_steps 则标记不完整。读取时用 `read_shader_debug_trace` 按步分页并按变量名过滤。每个捕获/API 的实际支持范围以 RenderDoc 后端返回为准。调试器结果是模拟，需与真实 GPU 回放输出比较。

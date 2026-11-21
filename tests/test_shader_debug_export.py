@@ -10,9 +10,14 @@ previous=sys.modules.get('renderdoc')
 sys.modules['renderdoc']=types.SimpleNamespace(ShaderStage=types.SimpleNamespace(Pixel=4), DebugPixelInputs=lambda:None)
 try:
     file=Path(__file__).resolve().parents[1]/'bridge_extension/renderdoc_mcp_bridge/domains/shader_debug.py'
-    spec=importlib.util.spec_from_file_location('shader_debug_export_test',file)
+    package = types.ModuleType('trace_export_test_domains')
+    package.__path__ = [str(file.parent)]
+    sys.modules[package.__name__] = package
+    spec=importlib.util.spec_from_file_location(package.__name__+'.shader_debug',file)
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 finally:
+    sys.modules.pop('trace_export_test_domains', None)
+    sys.modules.pop('trace_export_test_domains.trace_writer', None)
     if previous is None:sys.modules.pop('renderdoc',None)
     else:sys.modules['renderdoc']=previous
 
